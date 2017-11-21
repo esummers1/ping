@@ -1,3 +1,3 @@
 # Ping
 
-A remake of Pong."# ping-java" 
+A remake of Pong.
