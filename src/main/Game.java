@@ -1,11 +1,36 @@
 package main;
 
+import gameObjects.Ball;
+import gameObjects.Bat;
+import gameObjects.Boundary;
+import gameObjects.GameObject;
+import gameObjects.Goal;
+
 public class Game {
 	
 	private Display display;
-	private BallObject ball;
-	private BatObject batLeft;
-	private BatObject batRight;
+	private Ball ball;
+	private Bat batLeft;
+	private Bat batRight;
+	private Goal goalLeft;
+	private Goal goalRight;
+	private Boundary boundaryTop;
+	private Boundary boundaryBottom;
+	
+	private static final double BALL_START_X_COORD = 395;
+	private static final double BALL_START_Y_COORD = 295;
+	
+	private static final double BAT_LEFT_START_X_COORD = 20;
+	private static final double BAT_LEFT_START_Y_COORD = 270;
+	
+	private static final double BAT_RIGHT_START_X_COORD = 770;
+	private static final double BAT_RIGHT_START_Y_COORD = 270;
+	
+	private static final double GOAL_LEFT_X_COORD = 0;
+	private static final double GOAL_RIGHT_X_COORD = 800;
+	
+	private static final double BOUNDARY_TOP_Y_COORD = 0;
+	private static final double BOUNDARY_BOTTOM_Y_COORD = 600;
 	
 	private int leftScore;
 	private int rightScore;
@@ -13,10 +38,21 @@ public class Game {
 	public Game() {
 		
 		display = new Display();
-		ball = new BallObject(395, 295, 3, 0);
-		batLeft = new BatObject(20, 270, 0, 0);
-		batRight = new BatObject(770, 270, 0, 0);
 		
+		ball = new Ball(BALL_START_X_COORD, BALL_START_Y_COORD);
+		ball.setVelocity(3, 0);
+		
+		batLeft = new Bat(BAT_LEFT_START_X_COORD, BAT_LEFT_START_Y_COORD);
+		batRight = new Bat(BAT_RIGHT_START_X_COORD, BAT_RIGHT_START_Y_COORD);
+		
+		goalLeft = new Goal(GOAL_LEFT_X_COORD);
+		goalRight = new Goal(GOAL_RIGHT_X_COORD);
+		
+		boundaryTop = new Boundary(BOUNDARY_TOP_Y_COORD);
+		boundaryBottom = new Boundary(BOUNDARY_BOTTOM_Y_COORD);
+		
+		leftScore = 0;
+		rightScore = 0;
 	}
 	
 	/**
@@ -26,6 +62,7 @@ public class Game {
 		
 		// introduce game
 		
+		//*** this somehow needs to happen once for each frame???
 		while (true) {
 			
 			//** poll input
@@ -34,9 +71,9 @@ public class Game {
 			
 			// impel bats with momentum based on inputs
 			
-			// Calculate bat movements			
-			batLeft.setFutureVertices(projectVertices(batLeft));
-			batRight.setFutureVertices(projectVertices(batRight));
+			// Calculate bat movements		
+			Vertex[] batLeftProjectedPosition = projectPosition(batLeft);
+			Vertex[] batRightProjectedPosition = projectPosition(batRight);
 			
 			// test for collisions
 			
@@ -44,7 +81,7 @@ public class Game {
 			
 			
 			// Calculate ball movement
-			ball.setFutureVertices(projectVertices(ball));
+			Vertex[] ballProjectedPosition = projectPosition(ball);
 			
 			// test for collisions
 			
@@ -52,6 +89,18 @@ public class Game {
 			
 			
 			//** handle point scored condition
+			
+			// update these with actual goal detection
+			boolean leftGoal = false;
+			boolean rightGoal = false;
+			
+			if (leftGoal) {
+				updateScore(true);
+			}
+			
+			if (rightGoal) {
+				updateScore(false);
+			}
 			
 			/** Render next frame
 			 * 
@@ -65,24 +114,26 @@ public class Game {
 	}
 	
 	/**
-	 * Give an array of vertices describing the new position of an object
+	 * Give an array of vertices describing the projected position of an object
 	 * after calculating its movement without collision detection.
-	 * @param object
+	 * @param gameObject
 	 * @return
 	 */
-	private Vertex[] projectVertices(GameObject object) {
+	private Vertex[] projectPosition(GameObject gameObject) {
 		
+		Vertex[] currentVertices = gameObject.getVertices();
 		Vertex[] newVertices = new Vertex[4];
 		
 		for (int i = 0; i < 4; i++) {
-			Vertex thisVertex = object.getCurrentVertices()[i];
 			
-			double newXCoordinate = thisVertex.getXCoordinate() + 
-					object.getXVelocity();
-			double newYCoordinate = thisVertex.getYCoordinate() + 
-					object.getYVelocity();
+			double xVelocity = gameObject.getXVelocity();
+			double yVelocity = gameObject.getYVelocity();
+			Vertex currentVertex = currentVertices[i];
 			
-			Vertex newVertex = new Vertex(newXCoordinate, newYCoordinate);
+			Vertex newVertex = new Vertex(
+					(currentVertex.getXCoordinate() + xVelocity),
+					(currentVertex.getYCoordinate() + yVelocity));
+			
 			newVertices[i] = newVertex;
 		}
 		
@@ -90,10 +141,27 @@ public class Game {
 	}
 	
 	/**
-	 * Updates the game score and resets the game objects for the next round.
+	 * Update the game score and reset the game objects for the next round.
 	 * @param isLeft
 	 */
 	private void updateScore(boolean isLeft) {
+		
+		batLeft.setVelocity(0, 0);
+		batRight.setVelocity(0, 0);
+		
+		ball.setPosition(BALL_START_X_COORD, BALL_START_Y_COORD);
+		batLeft.setPosition(
+				BAT_LEFT_START_X_COORD, BAT_LEFT_START_Y_COORD);
+		batRight.setPosition(
+				BAT_RIGHT_START_X_COORD, BAT_RIGHT_START_Y_COORD);
+		
+		// Update score, set ball moving away from side which just scored
+		if (isLeft) {
+			leftScore++;
+			ball.setVelocity(3, 0);
+		} else {
+			rightScore++;
+			ball.setVelocity(-3, 0);
+		}
 	}
-
 }
