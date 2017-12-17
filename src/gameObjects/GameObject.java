@@ -1,65 +1,70 @@
 package gameObjects;
 
+import java.awt.Graphics2D;
+
 import main.Vertex;
 
 public class GameObject {
 	
-	private int xSize;
-	private int ySize;
+	private double width;
+	private double height;
 	
-	private double xPosition;
-	private double yPosition;
+	private double x;
+	private double y;
 	
-	private double xVelocity;
-	private double yVelocity;
+	private double xVel;
+	private double yVel;
 	
-	public GameObject(int xSize,
-			int ySize,
-			double xPosition,
-			double yPosition,
-			double xVelocity,
-			double yVelocity) {
+	public GameObject(double width,
+			double height,
+			double x,
+			double y,
+			double xVel,
+			double yVel) {
 		
-		this.xSize = xSize;
-		this.ySize = ySize;
-		this.xPosition = xPosition;
-		this.yPosition = yPosition;
-		this.xVelocity = xVelocity;
-		this.yVelocity = yVelocity;
+		this.width = width;
+		this.height = height;
+		this.x = x;
+		this.y = y;
+		this.xVel = xVel;
+		this.yVel = yVel;
 	}
 	
-	public int getXSize() {
-		return xSize;
+	public double getWidth() {
+		return width;
 	}
 	
-	public int getYSize() {
-		return ySize;
+	public double getHeight() {
+		return height;
 	}
 	
-	public double getXPosition() {
-		return xPosition;
+	public double getX() {
+		return x;
 	}
 	
-	public double getYPosition() {
-		return yPosition;
+	public double getY() {
+		return y;
 	}
 	
-	public double getXVelocity() {
-		return xVelocity;
+	public double getXVel() {
+		return xVel;
 	}
 	
-	public double getYVelocity() {
-		return yVelocity;
+	public double getYVel() {
+		return yVel;
 	}
 	
-	public void setVelocity(double xVelocity, double yVelocity) {
-		this.xVelocity = xVelocity;
-		this.yVelocity = yVelocity;
+	public void setVelocity(double xVel, double yVel) {
+		this.xVel = xVel;
+		this.yVel = yVel;
 	}
 	
-	public void setPosition(double newXPosition, double newYPosition) {
-		this.xPosition = newXPosition;
-		this.yPosition = newYPosition;
+	public void setPosition(double x, double y) {
+		this.x = x;
+		this.y = y;
+	}
+	
+	public void draw(Graphics2D g) {
 	}
 	
 	/**
@@ -70,10 +75,10 @@ public class GameObject {
 	public Vertex[] getVertices() {
 		
 		Vertex[] vertices = new Vertex[]{
-				new Vertex(xPosition, yPosition),
-				new Vertex((xPosition + xSize), yPosition),
-				new Vertex((xPosition + xSize), (yPosition + ySize)),
-				new Vertex(xPosition, (yPosition + ySize))
+				new Vertex(x, y),
+				new Vertex((x + width), y),
+				new Vertex((x + width), (y + height)),
+				new Vertex(x, (y + height))
 		};
 		
 		return vertices;

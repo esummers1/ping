@@ -1,0 +1,5 @@
+ - Have score in title, update when a side scores
+ - Fix timestep (60 FPS)
+ - Collision handling (score detection is subset, collision of ball with goal)
+ - Physics output (actual update of object positions)
+ - Input sampling

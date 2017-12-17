@@ -2,20 +2,20 @@ package main;
 
 public class Vertex {
 	
-	private double xCoordinate;
-	private double yCoordinate;
+	private double x;
+	private double y;
 	
-	public Vertex(double xCoordinate, double yCoordinate) {
-		this.xCoordinate = xCoordinate;
-		this.yCoordinate = yCoordinate;
+	public Vertex(double x, double y) {
+		this.x = x;
+		this.y = y;
 	}
 	
-	public double getXCoordinate() {
-		return xCoordinate;
+	public double getX() {
+		return x;
 	}
 	
-	public double getYCoordinate() {
-		return yCoordinate;
+	public double getY() {
+		return y;
 	}
 	
 }
