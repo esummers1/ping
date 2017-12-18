@@ -1,5 +1,8 @@
- - Have score in title, update when a side scores
- - Fix timestep (60 FPS)
- - Collision handling (score detection is subset, collision of ball with goal)
- - Physics output (actual update of object positions)
+ - Finish collision handling for ball
  - Input sampling
+ - Make physics scaling dynamic (not bound to 800x600 1:1 pixel grid)
+ - Distinguish between GameObject subclasses for handleCollisions
+  -> don't bother checking if bat objects have collided with each other or
+     themselves
+ - Be able to return score condition from collision handling methods
+ - Issue with bottom-boundary collision: batRight phases inside it

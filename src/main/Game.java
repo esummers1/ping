@@ -1,14 +1,11 @@
 package main;
 
-import java.awt.Graphics;
 import java.util.List;
 import java.util.ArrayList;
 
 import gameObjects.Ball;
 import gameObjects.Bat;
-import gameObjects.Boundary;
 import gameObjects.GameObject;
-import gameObjects.Goal;
 
 public class Game {
 	
@@ -16,10 +13,6 @@ public class Game {
 	private Ball ball;
 	private Bat batLeft;
 	private Bat batRight;
-	private Goal goalLeft;
-	private Goal goalRight;
-	private Boundary boundaryTop;
-	private Boundary boundaryBottom;
 	
 	private static final double BALL_INIT_X = 395;
 	private static final double BALL_INIT_Y = 295;
@@ -36,6 +29,11 @@ public class Game {
 	private static final double BOUNDARY_TOP_Y = 0;
 	private static final double BOUNDARY_BOTTOM_Y = 600;
 	
+	private static final double BAT_ACCELERATION = 0.1;
+	
+	// Set game timing to 60 FPS
+	private static final double TIME_STEP = (double) (1000 / 60);
+	
 	private int leftScore;
 	private int rightScore;
 	
@@ -44,16 +42,10 @@ public class Game {
 		display = new Display();
 		
 		ball = new Ball(BALL_INIT_X, BALL_INIT_Y);
-		ball.setVelocity(3, 0);
+		ball.setVelocity(1, -5);
 		
 		batLeft = new Bat(BAT_LEFT_INIT_X, BAT_LEFT_INIT_Y);
 		batRight = new Bat(BAT_RIGHT_INIT_X, BAT_RIGHT_INIT_Y);
-		
-		goalLeft = new Goal(GOAL_LEFT_X);
-		goalRight = new Goal(GOAL_RIGHT_X);
-		
-		boundaryTop = new Boundary(BOUNDARY_TOP_Y);
-		boundaryBottom = new Boundary(BOUNDARY_BOTTOM_Y);
 		
 		leftScore = 0;
 		rightScore = 0;
@@ -64,10 +56,10 @@ public class Game {
 	 */
 	public void run() {
 		
-		// introduce game
-		
 		//*** this somehow needs to happen once for each frame???
 		while (true) {
+			
+			long startTime = System.currentTimeMillis();
 			
 			sampleInput();
 			
@@ -84,6 +76,16 @@ public class Game {
 			
 			render();
 			
+			long endTime = System.currentTimeMillis();
+			long deltaTime = endTime - startTime;
+			
+			// Wait until full time step has elapsed
+			try {
+				Thread.sleep((long) (TIME_STEP - deltaTime));
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
 		}
 		
 	}
@@ -92,6 +94,16 @@ public class Game {
 	 * Sample player input for this game loop.
 	 */
 	private void sampleInput() {
+		
+		// Get rid of acceleration input from last loop
+		batLeft.resetAcceleration();
+		batRight.resetAcceleration();
+		
+		// @TODO
+		
+		// test purposes
+		batLeft.setAcceleratingUp();
+		batRight.setAcceleratingDown();
 	}
 	
 	
@@ -100,29 +112,54 @@ public class Game {
 		boolean leftScored = false;
 		boolean rightScored = false;
 		
-		// impel bats with momentum based on inputs
+		// Impel bats with acceleration from inputs
+		accelerateBat(batLeft);
+		accelerateBat(batRight);
 		
 		// Project bat movements
 		Vertex[] batLeftProjectedPosition = projectPosition(batLeft);
 		Vertex[] batRightProjectedPosition = projectPosition(batRight);
 		
-		// test for collisions with boundaries
+		// Test for boundary collisions
+		Vertex[] batLeftNextPosition = handleCollisions(batLeft, 
+				batLeftProjectedPosition);
+		Vertex[] batRightNextPosition = handleCollisions(batRight, 
+				batRightProjectedPosition);
 		
-		// decide on correct new positions and velocities (use them)
-		
+		// Assign new positions to bat objects
+		batLeft.setPosition(batLeftNextPosition[0]);
+		batRight.setPosition(batRightNextPosition[0]);
 		
 		// Project ball movement
 		Vertex[] ballProjectedPosition = projectPosition(ball);
 		
-		// test for collisions (incl. score)
+		// Test for collisions
+		Vertex[] ballNextPosition = handleCollisions(ball, 
+				ballProjectedPosition);
 		
-		// decide on correct new positions and velocities (use them)
+		// Assign new positions to ball object
+		ball.setPosition(ballNextPosition[0]);
 		
-		
-		
-		
+		// @TODO: this needs to get passed out somehow
 		boolean[] whoScored = new boolean[]{leftScored, rightScored};
 		return whoScored;
+	}
+	
+	/**
+	 * Apply input acceleration to bat object.
+	 * @param bat
+	 */
+	private void accelerateBat(Bat bat) {
+		
+		double yVel = bat.getYVel();
+		
+		if (bat.isAcceleratingDown()) {
+			bat.setVelocity(0, yVel + BAT_ACCELERATION);
+		}
+		
+		if (bat.isAcceleratingUp()) {
+			bat.setVelocity(0, yVel - BAT_ACCELERATION);
+		}
 	}
 	
 	/**
@@ -149,6 +186,71 @@ public class Game {
 	}
 	
 	/**
+	 * Return an array of vertices describing the position of an object after
+	 * collisions have been computed.
+	 * @param gameObject
+	 * @param vertices
+	 * @return
+	 */
+	private Vertex[] handleCollisions(GameObject gameObject, 
+			Vertex[] vertices) {
+		
+		// Create working array (for multiple evaluation)
+		Vertex[] nextPosition = vertices;
+		
+		// Test for top boundary collision
+		if (nextPosition[0].getY() <= BOUNDARY_TOP_Y) {
+			double penetrationDepth = BOUNDARY_TOP_Y - nextPosition[0].getY();
+			
+			nextPosition[0] = new Vertex(nextPosition[0].getX(),
+					BOUNDARY_TOP_Y + penetrationDepth);
+			
+			nextPosition[1] = new Vertex(nextPosition[0].getX() + 
+					gameObject.getWidth(), nextPosition[0].getY());
+			
+			nextPosition[2] = new Vertex(nextPosition[1].getX(),
+					nextPosition[1].getY() + gameObject.getHeight());
+			
+			nextPosition[3] = new Vertex(nextPosition[0].getX(),
+					nextPosition[2].getY());
+			
+			// Reverse object vertical velocity
+			gameObject.setVelocity(gameObject.getXVel(), 
+					(-1) * gameObject.getYVel());
+		}
+		
+		// Test for bottom boundary collision
+		if (nextPosition[2].getY() >= BOUNDARY_BOTTOM_Y) {
+			double penetrationDepth = nextPosition[2].getY() - 
+					BOUNDARY_BOTTOM_Y;
+			
+			nextPosition[2] = new Vertex(nextPosition[2].getX(),
+					BOUNDARY_BOTTOM_Y - penetrationDepth);
+			
+			nextPosition[3] = new Vertex(nextPosition[2].getX() - 
+					gameObject.getWidth(), nextPosition[2].getY());
+			
+			nextPosition[0] = new Vertex(nextPosition[3].getX(),
+					nextPosition[3].getY() + gameObject.getWidth());
+			
+			nextPosition[1] = new Vertex(nextPosition[2].getX(),
+					nextPosition[0].getY());
+			
+			// Reverse object vertical velocity
+			gameObject.setVelocity(gameObject.getXVel(), 
+					(-1) * gameObject.getYVel());
+		}
+		
+		if (gameObject instanceof Ball) {
+			
+			// Do the other checks, i.e. goal collision and bat collision
+			
+		}
+		
+		return nextPosition;
+	}
+	
+	/**
 	 * Update the game score and reset the game objects for the next round.
 	 * @param isLeft
 	 */
@@ -169,6 +271,9 @@ public class Game {
 			rightScore++;
 			ball.setVelocity(-3, 0);
 		}
+		
+		// Update title to reflect score
+		display.getFrame().setTitle("Ping | " + leftScore + " - " + rightScore);
 	}
 	
 	/**

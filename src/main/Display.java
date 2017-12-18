@@ -31,4 +31,8 @@ public class Display {
     	return panel;
     }
     
+    public JFrame getFrame() {
+    	return frame;
+    }
+    
 }

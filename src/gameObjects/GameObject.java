@@ -1,5 +1,6 @@
 package gameObjects;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
 
 import main.Vertex;
@@ -64,7 +65,14 @@ public class GameObject {
 		this.y = y;
 	}
 	
+	public void setPosition(Vertex vertex) {
+		this.x = vertex.getX();
+		this.y = vertex.getY();
+	}
+	
 	public void draw(Graphics2D g) {
+		g.setColor(Color.WHITE);
+		g.fillRect((int) x, (int) y, (int) width, (int) height);
 	}
 	
 	/**
