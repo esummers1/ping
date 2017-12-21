@@ -1,18 +1,32 @@
 package main;
 
 import java.util.List;
+import java.awt.geom.Line2D;
 import java.util.ArrayList;
 
 import gameObjects.Ball;
 import gameObjects.Bat;
+import gameObjects.Boundary;
 import gameObjects.GameObject;
+import gameObjects.Goal;
 
 public class Game {
 	
 	private Display display;
 	private Ball ball;
-	private Bat batLeft;
-	private Bat batRight;
+	private Bat batL;
+	private Bat batR;
+	private Boundary boundT;
+	private Boundary boundB;
+	private Goal goalL;
+	private Goal goalR;
+	
+	private MyKeyListener listener;
+	
+	private char currentKey;
+	
+	private boolean leftScored;
+	private boolean rightScored;
 	
 	private static final double BALL_INIT_X = 395;
 	private static final double BALL_INIT_Y = 295;
@@ -29,7 +43,7 @@ public class Game {
 	private static final double BOUNDARY_TOP_Y = 0;
 	private static final double BOUNDARY_BOTTOM_Y = 600;
 	
-	private static final double BAT_ACCELERATION = 0.1;
+	private static final double BAT_ACCELERATION = 0.08;
 	
 	// Set game timing to 60 FPS
 	private static final double TIME_STEP = (double) (1000 / 60);
@@ -42,10 +56,17 @@ public class Game {
 		display = new Display();
 		
 		ball = new Ball(BALL_INIT_X, BALL_INIT_Y);
-		ball.setVelocity(1, -5);
+		ball.setVel(10, 0);
 		
-		batLeft = new Bat(BAT_LEFT_INIT_X, BAT_LEFT_INIT_Y);
-		batRight = new Bat(BAT_RIGHT_INIT_X, BAT_RIGHT_INIT_Y);
+		batL = new Bat(BAT_LEFT_INIT_X, BAT_LEFT_INIT_Y);
+		batR = new Bat(BAT_RIGHT_INIT_X, BAT_RIGHT_INIT_Y);
+		
+		boundT = new Boundary(BOUNDARY_TOP_Y);
+		boundB = new Boundary(BOUNDARY_BOTTOM_Y);
+		goalL = new Goal(GOAL_LEFT_X, true);
+		goalR = new Goal(GOAL_RIGHT_X, false);
+		
+		listener = new MyKeyListener(this);
 		
 		leftScore = 0;
 		rightScore = 0;
@@ -56,30 +77,31 @@ public class Game {
 	 */
 	public void run() {
 		
-		//*** this somehow needs to happen once for each frame???
 		while (true) {
 			
 			long startTime = System.currentTimeMillis();
+			leftScored = false;
+			rightScored = false;
 			
 			sampleInput();
 			
 			// Calculate motion of objects and return scoring if necessary
-			boolean[] whoScored = calculatePhysics();
+			calculatePhysics();
 			
-			if (whoScored[0]) {
+			if (leftScored) {
 				updateScore(true);
 			}
 			
-			if (whoScored[1]) {
+			if (rightScored) {
 				updateScore(false);
 			}
 			
 			render();
 			
+			// Regulate time step
 			long endTime = System.currentTimeMillis();
 			long deltaTime = endTime - startTime;
 			
-			// Wait until full time step has elapsed
 			try {
 				Thread.sleep((long) (TIME_STEP - deltaTime));
 			} catch (InterruptedException e) {
@@ -90,59 +112,83 @@ public class Game {
 		
 	}
 	
+	
+	public void setCurrentKey(char c) {
+		this.currentKey = c;
+	}
+	
 	/**
 	 * Sample player input for this game loop.
 	 */
 	private void sampleInput() {
 		
 		// Get rid of acceleration input from last loop
-		batLeft.resetAcceleration();
-		batRight.resetAcceleration();
+		batL.resetAcc();
+		batR.resetAcc();
 		
-		// @TODO
+		// Detect key input - ?? need to test this
+		if (currentKey == 'a') {
+			batL.setAccUp();
+		}
+		
+		if (currentKey == 'z') {
+			batL.setAccDown();
+		}
+		
+		if (currentKey == 'k') {
+			batR.setAccUp();
+		}
+		
+		if (currentKey == 'm') {
+			batR.setAccDown();
+		}
 		
 		// test purposes
-		batLeft.setAcceleratingUp();
-		batRight.setAcceleratingDown();
+		batL.setAccUp();
+		batR.setAccDown();
 	}
 	
-	
-	private boolean[] calculatePhysics() {
-		
-		boolean leftScored = false;
-		boolean rightScored = false;
+	/**
+	 * Calculate the movements of the mobile game objects.
+	 */
+	private void calculatePhysics() {
 		
 		// Impel bats with acceleration from inputs
-		accelerateBat(batLeft);
-		accelerateBat(batRight);
+		accelerateBat(batL);
+		accelerateBat(batR);
 		
 		// Project bat movements
-		Vertex[] batLeftProjectedPosition = projectPosition(batLeft);
-		Vertex[] batRightProjectedPosition = projectPosition(batRight);
+		project(batL);
+		project(batR);
 		
 		// Test for boundary collisions
-		Vertex[] batLeftNextPosition = handleCollisions(batLeft, 
-				batLeftProjectedPosition);
-		Vertex[] batRightNextPosition = handleCollisions(batRight, 
-				batRightProjectedPosition);
+		List<GameObject> batTest = new ArrayList<>();
+		batTest.add(boundT);
+		batTest.add(boundB);
+		
+		handleCollisions(batTest, batL);
+		handleCollisions(batTest, batR);
 		
 		// Assign new positions to bat objects
-		batLeft.setPosition(batLeftNextPosition[0]);
-		batRight.setPosition(batRightNextPosition[0]);
+		batL.updatePos();
+		batR.updatePos();
 		
 		// Project ball movement
-		Vertex[] ballProjectedPosition = projectPosition(ball);
+		project(ball);
 		
-		// Test for collisions
-		Vertex[] ballNextPosition = handleCollisions(ball, 
-				ballProjectedPosition);
+		//**** Test for collisions
+		List<GameObject> ballTest = new ArrayList<>();
+		ballTest.add(boundB);
+		ballTest.add(boundT);
+		ballTest.add(batL);
+		ballTest.add(batR);
+		ballTest.add(goalL);
+		ballTest.add(goalR);
+		
+		handleCollisions(ballTest, ball);
 		
 		// Assign new positions to ball object
-		ball.setPosition(ballNextPosition[0]);
-		
-		// @TODO: this needs to get passed out somehow
-		boolean[] whoScored = new boolean[]{leftScored, rightScored};
-		return whoScored;
+		ball.updatePos();		
 	}
 	
 	/**
@@ -153,101 +199,135 @@ public class Game {
 		
 		double yVel = bat.getYVel();
 		
-		if (bat.isAcceleratingDown()) {
-			bat.setVelocity(0, yVel + BAT_ACCELERATION);
+		if (bat.isAccDown()) {
+			bat.setYVel(yVel + BAT_ACCELERATION);
 		}
 		
-		if (bat.isAcceleratingUp()) {
-			bat.setVelocity(0, yVel - BAT_ACCELERATION);
+		if (bat.isAccUp()) {
+			bat.setYVel(yVel - BAT_ACCELERATION);
 		}
 	}
 	
 	/**
-	 * Give an array of vertices describing the projected position of an object
-	 * after calculating its movement without collision detection.
+	 * Return an array of vertices describing an object's current or next
+	 * location.
 	 * @param gameObject
+	 * @param current
 	 * @return
 	 */
-	private Vertex[] projectPosition(GameObject gameObject) {
+	private Vertex[] locate(GameObject object, boolean current) {
 		
-		Vertex[] currentVertices = gameObject.getVertices();
-		Vertex[] newVertices = new Vertex[4];
+		double width = object.getWidth();
+		double height = object.getHeight();
+		double x;
+		double y;
 		
-		for (int i = 0; i < 4; i++) {
-			
-			Vertex newVertex = new Vertex(
-					(currentVertices[i].getX() + gameObject.getXVel()),
-					(currentVertices[i].getY() + gameObject.getYVel()));
-			
-			newVertices[i] = newVertex;
+		if (current) {
+			x = object.getXPos();
+			y = object.getYPos();
+		} else {
+			x = object.getXNext();
+			y = object.getYNext();
 		}
 		
-		return newVertices;
+		Vertex[] location = new Vertex[]{
+				new Vertex(x, y),
+				new Vertex(x + width, y),
+				new Vertex(x + width, y + height),
+				new Vertex(x, y + height)
+		};
+		
+		return location;
 	}
 	
 	/**
-	 * Return an array of vertices describing the position of an object after
-	 * collisions have been computed.
+	 * Assign to an object's nextPosition fields its projected next position.
 	 * @param gameObject
-	 * @param vertices
 	 * @return
 	 */
-	private Vertex[] handleCollisions(GameObject gameObject, 
-			Vertex[] vertices) {
+	private void project(GameObject object) {
+		object.setXNext(object.getXPos() + object.getXVel());
+		object.setYNext(object.getYPos() + object.getYVel());
+	}
+	
+	/**
+	 * Test whether a given object collides with any of the objects in a list
+	 * of objects during its movement to its projected next position; if so,
+	 * alter its next position to simulate bouncing.
+	 * @param objects
+	 */
+	private void handleCollisions(List<GameObject> gameObjects, 
+			GameObject object) {
 		
-		// Create working array (for multiple evaluation)
-		Vertex[] nextPosition = vertices;
+		Vertex[] current = locate(object, true);
+		Vertex[] next = locate(object, false);
 		
-		// Test for top boundary collision
-		if (nextPosition[0].getY() <= BOUNDARY_TOP_Y) {
-			double penetrationDepth = BOUNDARY_TOP_Y - nextPosition[0].getY();
+		boolean collides = false;
+		
+		// For all gameObjects, i.e. those against which we are testing
+		for (GameObject gameObject : gameObjects) {
 			
-			nextPosition[0] = new Vertex(nextPosition[0].getX(),
-					BOUNDARY_TOP_Y + penetrationDepth);
+			Vertex[] target = locate(gameObject, true);
 			
-			nextPosition[1] = new Vertex(nextPosition[0].getX() + 
-					gameObject.getWidth(), nextPosition[0].getY());
+			// Map the path of the object being tested
+			Line2D[] trajectories = new Line2D[4];
 			
-			nextPosition[2] = new Vertex(nextPosition[1].getX(),
-					nextPosition[1].getY() + gameObject.getHeight());
+			for (int i = 0; i < 3; i++) {
+				trajectories[i] = new Line2D.Double(
+						current[i].getX(),
+						next[i].getX(),
+						current[i].getY(),
+						next[i].getY());
+			}
 			
-			nextPosition[3] = new Vertex(nextPosition[0].getX(),
-					nextPosition[2].getY());
+			Line2D[] targetSides = new Line2D[4];
+			int[] corners = new int[]{0, 1, 2, 3, 0};
 			
-			// Reverse object vertical velocity
-			gameObject.setVelocity(gameObject.getXVel(), 
-					(-1) * gameObject.getYVel());
+			for (int i = 0; i < 3; i++) {
+				targetSides[i] = new Line2D.Double(
+						target[i].getX(), target[corners[i + 1]].getX(),
+						target[i].getY(), target[corners[i + 1]].getY());
+			}
+			
+			// Test intersection
+			for (Line2D trajectory : trajectories) {
+				for (Line2D side : targetSides) {
+					collides = side.intersectsLine(trajectory); // issue?
+				}
+			}
+			
+			if (collides) {
+				
+				// Detect if scoring has occurred; if so, end calculation
+				if (object instanceof Ball && gameObject instanceof Goal) {
+					
+					if (((Goal) gameObject).isLeft()) {
+						leftScored = true;
+					} else {
+						rightScored = true;
+					}
+					
+					return;
+				}
+				
+				double xNext = 0;
+				double yNext = 0;
+				double xVel = 0;
+				double yVel = 0;
+				
+				// Calculate penetration****
+				
+				// If ball hitting bat, calculate 'spin'****
+				if (object instanceof Ball && gameObject instanceof Bat) {
+				}
+				
+				// Calculate resultant position and velocity****
+				
+				// Write new values to object
+				object.setPosition(xNext, yNext);
+				object.setVel(xVel, yVel);
+			}
 		}
-		
-		// Test for bottom boundary collision
-		if (nextPosition[2].getY() >= BOUNDARY_BOTTOM_Y) {
-			double penetrationDepth = nextPosition[2].getY() - 
-					BOUNDARY_BOTTOM_Y;
-			
-			nextPosition[2] = new Vertex(nextPosition[2].getX(),
-					BOUNDARY_BOTTOM_Y - penetrationDepth);
-			
-			nextPosition[3] = new Vertex(nextPosition[2].getX() - 
-					gameObject.getWidth(), nextPosition[2].getY());
-			
-			nextPosition[0] = new Vertex(nextPosition[3].getX(),
-					nextPosition[3].getY() + gameObject.getWidth());
-			
-			nextPosition[1] = new Vertex(nextPosition[2].getX(),
-					nextPosition[0].getY());
-			
-			// Reverse object vertical velocity
-			gameObject.setVelocity(gameObject.getXVel(), 
-					(-1) * gameObject.getYVel());
-		}
-		
-		if (gameObject instanceof Ball) {
-			
-			// Do the other checks, i.e. goal collision and bat collision
-			
-		}
-		
-		return nextPosition;
 	}
 	
 	/**
@@ -256,20 +336,25 @@ public class Game {
 	 */
 	private void updateScore(boolean isLeft) {
 		
-		batLeft.setVelocity(0, 0);
-		batRight.setVelocity(0, 0);
+		batL.setVel(0, 0);
+		batR.setVel(0, 0);
 		
 		ball.setPosition(BALL_INIT_X, BALL_INIT_Y);
-		batLeft.setPosition(BAT_LEFT_INIT_X, BAT_LEFT_INIT_Y);
-		batRight.setPosition(BAT_RIGHT_INIT_X, BAT_RIGHT_INIT_Y);
+		ball.updatePos();
+		
+		batL.setPosition(BAT_LEFT_INIT_X, BAT_LEFT_INIT_Y);
+		batL.updatePos();
+		
+		batR.setPosition(BAT_RIGHT_INIT_X, BAT_RIGHT_INIT_Y);
+		batR.updatePos();
 		
 		// Update score, set ball moving away from side which just scored
 		if (isLeft) {
 			leftScore++;
-			ball.setVelocity(3, 0);
+			ball.setVel(3, 0);
 		} else {
 			rightScore++;
-			ball.setVelocity(-3, 0);
+			ball.setVel(-3, 0);
 		}
 		
 		// Update title to reflect score
@@ -282,8 +367,8 @@ public class Game {
 	private void render() {
 		List<GameObject> objectsToDraw = new ArrayList<>();
 		
-		objectsToDraw.add(batLeft);
-		objectsToDraw.add(batRight);
+		objectsToDraw.add(batL);
+		objectsToDraw.add(batR);
 		objectsToDraw.add(ball);
 		
 		display.getPanel().setObjects(objectsToDraw);

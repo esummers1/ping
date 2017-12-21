@@ -10,23 +10,26 @@ public class GameObject {
 	private double width;
 	private double height;
 	
-	private double x;
-	private double y;
+	private double xPos;
+	private double yPos;
+	
+	private double xNext;
+	private double yNext;
 	
 	private double xVel;
 	private double yVel;
 	
 	public GameObject(double width,
 			double height,
-			double x,
-			double y,
+			double xPos,
+			double yPos,
 			double xVel,
 			double yVel) {
 		
 		this.width = width;
 		this.height = height;
-		this.x = x;
-		this.y = y;
+		this.xPos = xPos;
+		this.yPos = yPos;
 		this.xVel = xVel;
 		this.yVel = yVel;
 	}
@@ -39,14 +42,22 @@ public class GameObject {
 		return height;
 	}
 	
-	public double getX() {
-		return x;
+	public double getXPos() {
+		return xPos;
 	}
 	
-	public double getY() {
-		return y;
+	public double getYPos() {
+		return yPos;
 	}
 	
+	public double getXNext() {
+		return xNext;
+	}
+	
+	public double getYNext() {
+		return yNext;
+	}
+
 	public double getXVel() {
 		return xVel;
 	}
@@ -55,40 +66,35 @@ public class GameObject {
 		return yVel;
 	}
 	
-	public void setVelocity(double xVel, double yVel) {
+	public void setVel(double xVel, double yVel) {
 		this.xVel = xVel;
 		this.yVel = yVel;
 	}
 	
-	public void setPosition(double x, double y) {
-		this.x = x;
-		this.y = y;
+	public void setYVel(double yVel) {
+		this.yVel = yVel;
 	}
 	
-	public void setPosition(Vertex vertex) {
-		this.x = vertex.getX();
-		this.y = vertex.getY();
+	public void updatePos() {
+		xPos = xNext;
+		yPos = yNext;
+	}
+	
+	public void setXNext(double xNext) {
+		this.xNext = xNext;
+	}
+	
+	public void setYNext(double yNext) {
+		this.yNext = yNext;
+	}
+	
+	public void setPosition(double xNext, double yNext) {
+		this.xNext = xNext;
+		this.yNext = yNext;
 	}
 	
 	public void draw(Graphics2D g) {
 		g.setColor(Color.WHITE);
-		g.fillRect((int) x, (int) y, (int) width, (int) height);
-	}
-	
-	/**
-	 * Return an array of Vertex objects describing the current corners of the
-	 * game object.
-	 * @return Vertex[]
-	 */
-	public Vertex[] getVertices() {
-		
-		Vertex[] vertices = new Vertex[]{
-				new Vertex(x, y),
-				new Vertex((x + width), y),
-				new Vertex((x + width), (y + height)),
-				new Vertex(x, (y + height))
-		};
-		
-		return vertices;
+		g.fillRect((int) xPos, (int) yPos, (int) width, (int) height);
 	}
 }

@@ -5,31 +5,31 @@ public class Bat extends GameObject {
 	private static final int WIDTH = 10;
 	private static final int HEIGHT = 60;
 	
-	private boolean acceleratingDown;
-	private boolean acceleratingUp;
+	private boolean accDown;
+	private boolean accUp;
 	
-	public Bat(double x, double y) {
-		super(WIDTH, HEIGHT, x, y, 0, 0);
+	public Bat(double xPos, double yPos) {
+		super(WIDTH, HEIGHT, xPos, yPos, 0, 0);
 	}
 	
-	public boolean isAcceleratingDown() {
-		return this.acceleratingDown;
+	public boolean isAccDown() {
+		return this.accDown;
 	}
 	
-	public boolean isAcceleratingUp() {
-		return this.acceleratingUp;
+	public boolean isAccUp() {
+		return this.accUp;
 	}
 	
-	public void setAcceleratingDown() {
-		this.acceleratingDown = true;
+	public void setAccDown() {
+		this.accDown = true;
 	}
 	
-	public void setAcceleratingUp() {
-		this.acceleratingUp = true;
+	public void setAccUp() {
+		this.accUp = true;
 	}
 	
-	public void resetAcceleration() {
-		this.acceleratingDown = false;
-		this.acceleratingUp = false;
+	public void resetAcc() {
+		this.accDown = false;
+		this.accUp = false;
 	}
 }

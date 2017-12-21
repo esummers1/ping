@@ -1,8 +1,4 @@
- - Finish collision handling for ball
- - Input sampling
+ - Finish collision handling
+   - Issue: NullPointerException on line 291 relating to intersection test
  - Make physics scaling dynamic (not bound to 800x600 1:1 pixel grid)
- - Distinguish between GameObject subclasses for handleCollisions
-  -> don't bother checking if bat objects have collided with each other or
-     themselves
- - Be able to return score condition from collision handling methods
- - Issue with bottom-boundary collision: batRight phases inside it
+ - Consider: will order of testing of collisions affect edge cases?
