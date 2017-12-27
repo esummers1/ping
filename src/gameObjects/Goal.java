@@ -9,6 +9,7 @@ public class Goal extends GameObject {
 	
 	public Goal(double xPos, boolean isLeft) {
 		super(WIDTH, HEIGHT, xPos, 0, 0, 0);
+		this.isLeft = isLeft;
 	}
 	
 	public boolean isLeft() {

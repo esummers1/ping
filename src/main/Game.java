@@ -31,10 +31,10 @@ public class Game {
 	private static final double BALL_INIT_X = 395;
 	private static final double BALL_INIT_Y = 295;
 	
-	private static final double BAT_LEFT_INIT_X = 20;
+	private static final double BAT_LEFT_X = 20;
 	private static final double BAT_LEFT_INIT_Y = 270;
 	
-	private static final double BAT_RIGHT_INIT_X = 770;
+	private static final double BAT_RIGHT_X = 770;
 	private static final double BAT_RIGHT_INIT_Y = 270;
 	
 	private static final double GOAL_LEFT_X = 0;
@@ -56,13 +56,13 @@ public class Game {
 		display = new Display();
 		
 		ball = new Ball(BALL_INIT_X, BALL_INIT_Y);
-		ball.setVel(10, 0);
+		ball.setVel(0.5, 5);
 		
-		batL = new Bat(BAT_LEFT_INIT_X, BAT_LEFT_INIT_Y);
-		batR = new Bat(BAT_RIGHT_INIT_X, BAT_RIGHT_INIT_Y);
+		batL = new Bat(BAT_LEFT_X, BAT_LEFT_INIT_Y);
+		batR = new Bat(BAT_RIGHT_X, BAT_RIGHT_INIT_Y);
 		
-		boundT = new Boundary(BOUNDARY_TOP_Y);
-		boundB = new Boundary(BOUNDARY_BOTTOM_Y);
+		boundT = new Boundary(BOUNDARY_TOP_Y, true);
+		boundB = new Boundary(BOUNDARY_BOTTOM_Y, false);
 		goalL = new Goal(GOAL_LEFT_X, true);
 		goalR = new Goal(GOAL_RIGHT_X, false);
 		
@@ -143,9 +143,8 @@ public class Game {
 			batR.setAccDown();
 		}
 		
-		// test purposes
-		batL.setAccUp();
-		batR.setAccDown();
+		// For testing
+		batR.setAccUp();
 	}
 	
 	/**
@@ -176,7 +175,7 @@ public class Game {
 		// Project ball movement
 		project(ball);
 		
-		//**** Test for collisions
+		// Test for collisions
 		List<GameObject> ballTest = new ArrayList<>();
 		ballTest.add(boundB);
 		ballTest.add(boundT);
@@ -254,7 +253,8 @@ public class Game {
 	 * Test whether a given object collides with any of the objects in a list
 	 * of objects during its movement to its projected next position; if so,
 	 * alter its next position to simulate bouncing.
-	 * @param objects
+	 * @param gameObjects
+	 * @param object
 	 */
 	private void handleCollisions(List<GameObject> gameObjects, 
 			GameObject object) {
@@ -275,31 +275,39 @@ public class Game {
 			for (int i = 0; i < 3; i++) {
 				trajectories[i] = new Line2D.Double(
 						current[i].getX(),
-						next[i].getX(),
 						current[i].getY(),
+						next[i].getX(),
 						next[i].getY());
 			}
 			
 			Line2D[] targetSides = new Line2D[4];
-			int[] corners = new int[]{0, 1, 2, 3, 0};
+			int[] corners = new int[]{1, 2, 3, 0};
 			
 			for (int i = 0; i < 3; i++) {
 				targetSides[i] = new Line2D.Double(
-						target[i].getX(), target[corners[i + 1]].getX(),
-						target[i].getY(), target[corners[i + 1]].getY());
+						target[i].getX(), target[i].getY(), 
+						target[corners[i]].getX(), target[corners[i]].getY());
 			}
 			
 			// Test intersection
 			for (Line2D trajectory : trajectories) {
 				for (Line2D side : targetSides) {
-					collides = side.intersectsLine(trajectory); // issue?
+					
+					try {
+						collides = side.intersectsLine(trajectory);
+					} catch (NullPointerException e) {
+						// Side in question has zero length
+						continue;
+					}
 				}
 			}
 			
 			if (collides) {
 				
-				// Detect if scoring has occurred; if so, end calculation
-				if (object instanceof Ball && gameObject instanceof Goal) {
+				// Ball hitting goal
+				if (gameObject instanceof Goal) {
+					
+					display.getFrame().setTitle("GOALL!!!!!!!");
 					
 					if (((Goal) gameObject).isLeft()) {
 						leftScored = true;
@@ -310,22 +318,43 @@ public class Game {
 					return;
 				}
 				
-				double xNext = 0;
-				double yNext = 0;
-				double xVel = 0;
-				double yVel = 0;
-				
-				// Calculate penetration****
-				
-				// If ball hitting bat, calculate 'spin'****
-				if (object instanceof Ball && gameObject instanceof Bat) {
+				// Ball hitting bat
+				if (gameObject instanceof Bat) {
+					/*
+					 * Calculate resultant position and velocity of ball,
+					 * taking penetration and 'spin' into account
+					 */
 				}
 				
-				// Calculate resultant position and velocity****
-				
-				// Write new values to object
-				object.setPosition(xNext, yNext);
-				object.setVel(xVel, yVel);
+				// Object hitting boundary
+				if (gameObject instanceof Boundary) {
+					
+					if (((Boundary) gameObject).isTop()) {
+						
+						// Calculate penetration depth
+						double penetrationDepth = Math.abs(
+								next[0].getY() - gameObject.getYPos());
+						
+						// Set resultant position and velocity
+						object.setYNext(
+								gameObject.getYPos() + penetrationDepth);
+						object.setYVel(object.getYVel() * (-1));
+						
+					} else {
+						
+						// Calculate penetration depth
+						double penetrationDepth = Math.abs(
+								next[2].getY() - gameObject.getYPos());
+						
+						// Set resultant position and velocity
+						object.setYNext(
+								gameObject.getYPos() - 
+								penetrationDepth - 
+								object.getHeight());
+						object.setYVel(object.getYVel() * (-1));
+						
+					}
+				}
 			}
 		}
 	}
@@ -342,10 +371,10 @@ public class Game {
 		ball.setPosition(BALL_INIT_X, BALL_INIT_Y);
 		ball.updatePos();
 		
-		batL.setPosition(BAT_LEFT_INIT_X, BAT_LEFT_INIT_Y);
+		batL.setPosition(BAT_LEFT_X, BAT_LEFT_INIT_Y);
 		batL.updatePos();
 		
-		batR.setPosition(BAT_RIGHT_INIT_X, BAT_RIGHT_INIT_Y);
+		batR.setPosition(BAT_RIGHT_X, BAT_RIGHT_INIT_Y);
 		batR.updatePos();
 		
 		// Update score, set ball moving away from side which just scored
