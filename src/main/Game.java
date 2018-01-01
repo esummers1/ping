@@ -56,7 +56,7 @@ public class Game {
 		display = new Display();
 		
 		ball = new Ball(BALL_INIT_X, BALL_INIT_Y);
-		ball.setVel(0.5, 5);
+		ball.setVel(4, 7);
 		
 		batL = new Bat(BAT_LEFT_X, BAT_LEFT_INIT_Y);
 		batR = new Bat(BAT_RIGHT_X, BAT_RIGHT_INIT_Y);
@@ -272,7 +272,7 @@ public class Game {
 			// Map the path of the object being tested
 			Line2D[] trajectories = new Line2D[4];
 			
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < 4; i++) {
 				trajectories[i] = new Line2D.Double(
 						current[i].getX(),
 						current[i].getY(),
@@ -283,21 +283,30 @@ public class Game {
 			Line2D[] targetSides = new Line2D[4];
 			int[] corners = new int[]{1, 2, 3, 0};
 			
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < 4; i++) {
+				int j = corners[i];
+				
 				targetSides[i] = new Line2D.Double(
 						target[i].getX(), target[i].getY(), 
-						target[corners[i]].getX(), target[corners[i]].getY());
+						target[j].getX(), target[j].getY());
 			}
 			
 			// Test intersection
+			here:
+			
 			for (Line2D trajectory : trajectories) {
 				for (Line2D side : targetSides) {
 					
-					try {
-						collides = side.intersectsLine(trajectory);
-					} catch (NullPointerException e) {
-						// Side in question has zero length
+					// Skip zero-length lines
+					if (side.getX1() == side.getX2() &&
+							side.getY1() == side.getY2()) {
 						continue;
+					}
+					
+					collides = side.intersectsLine(trajectory);
+					
+					if (collides) {
+						break here;
 					}
 				}
 			}
@@ -306,8 +315,6 @@ public class Game {
 				
 				// Ball hitting goal
 				if (gameObject instanceof Goal) {
-					
-					display.getFrame().setTitle("GOALL!!!!!!!");
 					
 					if (((Goal) gameObject).isLeft()) {
 						leftScored = true;

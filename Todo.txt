@@ -1,8 +1,4 @@
  - Finish collision handling
-  -> Goal collision not picked up
-  -> Boundary collisions glitch some of the time when velocity < height
-  -> Top boundary collision sets position strangely 
-  -> Collision of ball with bat is more complex
   
  - Make physics scaling dynamic (not bound to 800x600 1:1 pixel grid)
  - Issue: keylistener not effective
