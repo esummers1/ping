@@ -1,4 +1,4 @@
  - Finish collision handling
-  
+ - locateIntercept may throw an exception when used (vertical lines lead to /0)
  - Make physics scaling dynamic (not bound to 800x600 1:1 pixel grid)
  - Issue: keylistener not effective

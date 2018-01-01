@@ -44,6 +44,7 @@ public class Game {
 	private static final double BOUNDARY_BOTTOM_Y = 600;
 	
 	private static final double BAT_ACCELERATION = 0.08;
+	private static final double BAT_FRICTION = 0.2;
 	
 	// Set game timing to 60 FPS
 	private static final double TIME_STEP = (double) (1000 / 60);
@@ -250,6 +251,34 @@ public class Game {
 	}
 	
 	/**
+	 * Return the location of the intersection of two Line2D objects as a Vertex
+	 * (using y = mx + c notation within).
+	 * @param line1
+	 * @param line2
+	 * @return
+	 */
+	private Vertex locateIntercept(Line2D line1, Line2D line2) {
+		
+		// Find gradients
+		double m1 = (line1.getY2() - line1.getY1()) /
+				(line1.getX2() - line1.getX1());
+		
+		double m2 = (line2.getY2() - line2.getY2()) /
+				(line2.getX2() - line2.getX1());
+		
+		// Find y-intercepts
+		double c1 = (line1.getY1() - m1 * line1.getX1());
+		double c2 = (line2.getY1() - m2 * line1.getX1());
+		
+		// Calculate intercept coordinates
+		double x = (c2 - c1) / (m1 - m2);
+		double y = m1 * x + c1;
+		
+		Vertex intercept = new Vertex(x, y);
+		return intercept;
+	}
+	
+	/**
 	 * Test whether a given object collides with any of the objects in a list
 	 * of objects during its movement to its projected next position; if so,
 	 * alter its next position to simulate bouncing.
@@ -280,6 +309,7 @@ public class Game {
 						next[i].getY());
 			}
 			
+			// Map the shape of the gameObject being tested against
 			Line2D[] targetSides = new Line2D[4];
 			int[] corners = new int[]{1, 2, 3, 0};
 			
@@ -325,13 +355,42 @@ public class Game {
 					return;
 				}
 				
-				// Ball hitting bat
+				// Apply frictional acceleration if gameObject is bat
 				if (gameObject instanceof Bat) {
-					/*
-					 * Calculate resultant position and velocity of ball,
-					 * taking penetration and 'spin' into account
-					 */
+					object.setYVel(object.getYVel() + 
+							BAT_FRICTION * gameObject.getYVel());
 				}
+				
+				// Map the shape of the object doing the colliding
+				Line2D[] colliderSides = new Line2D[4];
+				
+				// Detect direction of travel / leading edge for colliding
+				boolean travellingLeft = false;
+				boolean travellingRight = false;
+				boolean travellingUp = false;
+				boolean travellingDown = false;
+				
+				if (Math.abs(object.getYVel()) >= Math.abs(object.getXVel())) {
+					if (object.getYVel() >= 0) {
+						travellingUp = true;
+					} else {
+						travellingDown = true;
+					}
+				} else {
+					if (object.getXVel() >= 0) {
+						travellingRight = true;
+					} else {
+						travellingLeft = true;
+					}
+				}
+				
+				// Locate position of intersection
+				
+				// Update position and reflect velocity as appropriate
+				
+				
+				
+				
 				
 				// Object hitting boundary
 				if (gameObject instanceof Boundary) {
