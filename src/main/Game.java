@@ -45,6 +45,7 @@ public class Game {
 	
 	private static final double BAT_ACCELERATION = 0.08;
 	private static final double BAT_FRICTION = 0.2;
+	private static final double BAT_PROPULSION = 1.1;
 	
 	// Set game timing to 60 FPS
 	private static final double TIME_STEP = (double) (1000 / 60);
@@ -57,7 +58,7 @@ public class Game {
 		display = new Display();
 		
 		ball = new Ball(BALL_INIT_X, BALL_INIT_Y);
-		ball.setVel(4, 7);
+		ball.setVel(2, -5);
 		
 		batL = new Bat(BAT_LEFT_X, BAT_LEFT_INIT_Y);
 		batR = new Bat(BAT_RIGHT_X, BAT_RIGHT_INIT_Y);
@@ -143,9 +144,6 @@ public class Game {
 		if (currentKey == 'm') {
 			batR.setAccDown();
 		}
-		
-		// For testing
-		batR.setAccUp();
 	}
 	
 	/**
@@ -263,8 +261,26 @@ public class Game {
 		double m1 = (line1.getY2() - line1.getY1()) /
 				(line1.getX2() - line1.getX1());
 		
-		double m2 = (line2.getY2() - line2.getY2()) /
+		double m2 = (line2.getY2() - line2.getY1()) /
 				(line2.getX2() - line2.getX1());
+		
+		// Approximate horizontal lines
+		if (line1.getY2() - line1.getY1() == 0) {
+			m1 = 0.000001;
+		}
+		
+		if (line2.getY2() - line2.getY1() == 0) {
+			m2 = 0.000001;
+		}
+		
+		// Approximate vertical lines
+		if (line1.getX2() - line1.getX1() == 0) {
+			m1 = 1000000;
+		}
+		
+		if (line2.getX2() - line2.getX1() == 0) {
+			m2 = 1000000;
+		}
 		
 		// Find y-intercepts
 		double c1 = (line1.getY1() - m1 * line1.getX1());
@@ -346,6 +362,8 @@ public class Game {
 				// Ball hitting goal
 				if (gameObject instanceof Goal) {
 					
+					System.out.println("GOOALLL");
+					
 					if (((Goal) gameObject).isLeft()) {
 						leftScored = true;
 					} else {
@@ -355,10 +373,15 @@ public class Game {
 					return;
 				}
 				
-				// Apply frictional acceleration if gameObject is bat
+				// Apply friction acceleration if gameObject is bat
 				if (gameObject instanceof Bat) {
 					object.setYVel(object.getYVel() + 
 							BAT_FRICTION * gameObject.getYVel());
+				}
+				
+				// Apply propulsive acceleration if gameObject is bat
+				if (gameObject instanceof Bat) {
+					object.setXVel(object.getXVel() * BAT_PROPULSION);
 				}
 				
 				// Map the shape of the object doing the colliding
@@ -384,42 +407,100 @@ public class Game {
 					}
 				}
 				
-				// Locate position of intersection
-				
-				// Update position and reflect velocity as appropriate
-				
-				
-				
-				
-				
-				// Object hitting boundary
-				if (gameObject instanceof Boundary) {
+				/*
+				 * Locate intersection point, update position of object, reflect
+				 * velocity as appropriate.
+				 */
+				if (travellingUp) {
 					
-					if (((Boundary) gameObject).isTop()) {
+					if (object.getXVel() >= 0) {
 						
-						// Calculate penetration depth
-						double penetrationDepth = Math.abs(
-								next[0].getY() - gameObject.getYPos());
+						Vertex intercept = locateIntercept(
+								trajectories[1], targetSides[2]);
 						
-						// Set resultant position and velocity
-						object.setYNext(
-								gameObject.getYPos() + penetrationDepth);
-						object.setYVel(object.getYVel() * (-1));
+						object.setPosition(
+								intercept.getX() - object.getWidth(), 
+								intercept.getY());
 						
 					} else {
 						
-						// Calculate penetration depth
-						double penetrationDepth = Math.abs(
-								next[2].getY() - gameObject.getYPos());
+						Vertex intercept = locateIntercept(
+								trajectories[0], targetSides[2]);
 						
-						// Set resultant position and velocity
-						object.setYNext(
-								gameObject.getYPos() - 
-								penetrationDepth - 
-								object.getHeight());
-						object.setYVel(object.getYVel() * (-1));
+						object.setPosition(intercept.getX(), intercept.getY());
 						
 					}
+					
+					object.setYVel(object.getYVel() * -1);
+					
+				} else if (travellingDown) {
+					
+					if (object.getXVel() >= 0) {
+						
+						Vertex intercept = locateIntercept(
+								trajectories[2], targetSides[0]);
+						
+						object.setPosition(
+								intercept.getX() - object.getWidth(), 
+								intercept.getY() - object.getHeight());
+						
+					} else {
+						
+						Vertex intercept = locateIntercept(
+								trajectories[3], targetSides[0]);
+						
+						object.setPosition(intercept.getX(), 
+								intercept.getY() - object.getHeight());
+						
+					}
+					
+					object.setYVel(object.getYVel() * -1);
+					
+				} else if (travellingLeft) {
+					
+					if (object.getYVel() >= 0) {
+						
+						Vertex intercept = locateIntercept(
+								trajectories[3], targetSides[1]);
+						
+						object.setPosition(intercept.getX(), 
+								intercept.getY() - object.getHeight());
+						
+					} else {
+						
+						Vertex intercept = locateIntercept(
+								trajectories[0], targetSides[1]);
+						
+						object.setPosition(intercept.getX(), intercept.getY());
+						
+					}
+					
+					object.setXVel(object.getXVel() * -1);
+					
+				} else if (travellingRight) {
+					
+					if (object.getYVel() >= 0) {
+						
+						Vertex intercept = locateIntercept(
+								trajectories[2], targetSides[3]);
+						
+						object.setPosition(
+								intercept.getX() - object.getWidth(),
+								intercept.getY() - object.getHeight());
+						
+					} else {
+						
+						Vertex intercept = locateIntercept(
+								trajectories[1], targetSides[3]);
+						
+						object.setPosition(
+								intercept.getX() - object.getWidth(),
+								intercept.getY());
+						
+					}
+					
+					object.setXVel(object.getXVel() * -1);
+					
 				}
 			}
 		}

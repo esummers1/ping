@@ -75,6 +75,10 @@ public class GameObject {
 		this.yVel = yVel;
 	}
 	
+	public void setXVel(double xVel) {
+		this.xVel = xVel;
+	}
+	
 	public void updatePos() {
 		xPos = xNext;
 		yPos = yNext;
