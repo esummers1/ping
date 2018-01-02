@@ -1,4 +1,3 @@
- - Collisions aren't handled properly at very high speeds (>1000 px/s)
  - Vertical collisions are handled strangely (object sticks)
  - Make physics scaling dynamic (not bound to 800x600 1:1 pixel grid)
  - Issue: keylistener not effective

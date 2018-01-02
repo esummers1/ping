@@ -47,6 +47,8 @@ public class Game {
 	private static final double BAT_FRICTION = 0.2;
 	private static final double BAT_PROPULSION = 1.1;
 	
+	private static final double PIXEL = 1;
+	
 	// Set game timing to 60 FPS
 	private static final double TIME_STEP = (double) (1000 / 60);
 	
@@ -58,7 +60,7 @@ public class Game {
 		display = new Display();
 		
 		ball = new Ball(BALL_INIT_X, BALL_INIT_Y);
-		ball.setVel(2, -5);
+		ball.setVel(0, 3);
 		
 		batL = new Bat(BAT_LEFT_X, BAT_LEFT_INIT_Y);
 		batR = new Bat(BAT_RIGHT_X, BAT_RIGHT_INIT_Y);
@@ -183,7 +185,11 @@ public class Game {
 		ballTest.add(goalL);
 		ballTest.add(goalR);
 		
+		System.out.println("Calculating collisions");
 		handleCollisions(ballTest, ball);
+		System.out.println("V: " + ball.getXVel() + ", " + ball.getYVel());
+		System.out.println("X: " + ball.getXPos() + "->" + ball.getXNext());
+		System.out.println("Y: " + ball.getYPos() + "->" + ball.getYNext());
 		
 		// Assign new positions to ball object
 		ball.updatePos();		
@@ -266,20 +272,20 @@ public class Game {
 		
 		// Approximate horizontal lines
 		if (line1.getY2() - line1.getY1() == 0) {
-			m1 = 0.000001;
+			m1 = 0.0001;
 		}
 		
 		if (line2.getY2() - line2.getY1() == 0) {
-			m2 = 0.000001;
+			m2 = 0.0001;
 		}
 		
 		// Approximate vertical lines
 		if (line1.getX2() - line1.getX1() == 0) {
-			m1 = 1000000;
+			m1 = 10000;
 		}
 		
 		if (line2.getX2() - line2.getX1() == 0) {
-			m2 = 1000000;
+			m2 = 10000;
 		}
 		
 		// Find y-intercepts
@@ -362,8 +368,6 @@ public class Game {
 				// Ball hitting goal
 				if (gameObject instanceof Goal) {
 					
-					System.out.println("GOOALLL");
-					
 					if (((Goal) gameObject).isLeft()) {
 						leftScored = true;
 					} else {
@@ -373,7 +377,7 @@ public class Game {
 					return;
 				}
 				
-				// Apply friction acceleration if gameObject is bat
+				// Apply frictional acceleration if gameObject is bat
 				if (gameObject instanceof Bat) {
 					object.setYVel(object.getYVel() + 
 							BAT_FRICTION * gameObject.getYVel());
@@ -410,6 +414,13 @@ public class Game {
 				/*
 				 * Locate intersection point, update position of object, reflect
 				 * velocity as appropriate.
+				 * 
+				 * Handled using leading corner (e.g. moving up and right -> use
+				 * top right corner).
+				 * 
+				 * N.B. PIXEL constant is used so that beginning of object
+				 * trajectory in next game step is not found to already
+				 * intersect with the gameObject it collided with last step.
 				 */
 				if (travellingUp) {
 					
@@ -420,14 +431,15 @@ public class Game {
 						
 						object.setPosition(
 								intercept.getX() - object.getWidth(), 
-								intercept.getY());
+								intercept.getY() + PIXEL);
 						
 					} else {
 						
 						Vertex intercept = locateIntercept(
 								trajectories[0], targetSides[2]);
 						
-						object.setPosition(intercept.getX(), intercept.getY());
+						object.setPosition(intercept.getX(), 
+								intercept.getY() + PIXEL);
 						
 					}
 					
@@ -442,7 +454,7 @@ public class Game {
 						
 						object.setPosition(
 								intercept.getX() - object.getWidth(), 
-								intercept.getY() - object.getHeight());
+								intercept.getY() - object.getHeight() - PIXEL);
 						
 					} else {
 						
@@ -450,7 +462,7 @@ public class Game {
 								trajectories[3], targetSides[0]);
 						
 						object.setPosition(intercept.getX(), 
-								intercept.getY() - object.getHeight());
+								intercept.getY() - object.getHeight() - PIXEL);
 						
 					}
 					
@@ -463,7 +475,7 @@ public class Game {
 						Vertex intercept = locateIntercept(
 								trajectories[3], targetSides[1]);
 						
-						object.setPosition(intercept.getX(), 
+						object.setPosition(intercept.getX() + PIXEL, 
 								intercept.getY() - object.getHeight());
 						
 					} else {
@@ -471,7 +483,8 @@ public class Game {
 						Vertex intercept = locateIntercept(
 								trajectories[0], targetSides[1]);
 						
-						object.setPosition(intercept.getX(), intercept.getY());
+						object.setPosition(intercept.getX() + PIXEL, 
+								intercept.getY());
 						
 					}
 					
@@ -485,7 +498,7 @@ public class Game {
 								trajectories[2], targetSides[3]);
 						
 						object.setPosition(
-								intercept.getX() - object.getWidth(),
+								intercept.getX() - object.getWidth() - PIXEL,
 								intercept.getY() - object.getHeight());
 						
 					} else {
@@ -494,7 +507,7 @@ public class Game {
 								trajectories[1], targetSides[3]);
 						
 						object.setPosition(
-								intercept.getX() - object.getWidth(),
+								intercept.getX() - object.getWidth() - PIXEL,
 								intercept.getY());
 						
 					}
