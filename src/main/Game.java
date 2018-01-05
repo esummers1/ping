@@ -43,13 +43,13 @@ public class Game implements KeyListener {
 	private static final double BOUNDARY_TOP_Y = 0;
 	private static final double BOUNDARY_BOTTOM_Y = 600;
 	
-	private static final double BAT_FRICTION = 0.35;
-	private static final double BAT_PROPULSION = 1.1;
+	private static final double BAT_FRICTION = 0.3;
+	private static final double BAT_PROPULSION = 1.08;
 	
 	private static final double BAT_BRAKING_RATIO = 0.985;
-	private static final double BAT_ACCELERATION = 0.2;
+	private static final double BAT_ACCELERATION = 0.17;
 	
-	private static final double PIXEL = 1;
+	private static final double PX = 1;
 	
 	// Set game timing to 60 FPS
 	private static final double TIME_STEP = (double) (1000 / 60);
@@ -62,7 +62,7 @@ public class Game implements KeyListener {
 		display = new Display(this);
 		
 		ball = new Ball(BALL_INIT_X, BALL_INIT_Y);
-		ball.setVel(-3, 1);
+		ball.initializeVel();
 		
 		batL = new Bat(BAT_LEFT_X, BAT_LEFT_INIT_Y);
 		batR = new Bat(BAT_RIGHT_X, BAT_RIGHT_INIT_Y);
@@ -150,7 +150,7 @@ public class Game implements KeyListener {
 		Physics.project(batL);
 		Physics.project(batR);
 		
-		// Test for boundary collisions
+		// Test for collisions
 		List<GameObject> batTest = new ArrayList<>();
 		batTest.add(boundT);
 		batTest.add(boundB);
@@ -174,14 +174,10 @@ public class Game implements KeyListener {
 		ballTest.add(goalL);
 		ballTest.add(goalR);
 		
-		System.out.println("Calculating collisions");
 		handleCollisions(ballTest, ball);
-		System.out.println("V: " + ball.getXVel() + ", " + ball.getYVel());
-		System.out.println("X: " + ball.getXPos() + "->" + ball.getXNext());
-		System.out.println("Y: " + ball.getYPos() + "->" + ball.getYNext());
 		
 		// Assign new positions to ball object
-		ball.updatePos();		
+		ball.updatePos();
 	}
 	
 	/**
@@ -194,11 +190,12 @@ public class Game implements KeyListener {
 		
 		double ballCentreY = ball.getYPos() + ball.getHeight() / 2;
 		double batCentreY = batR.getYPos() + batR.getHeight() / 2;
+		double deltaY = ballCentreY - batCentreY;
 		
-		if (ballCentreY >= batCentreY) {
-			batR.setAccDown();
-		} else {
+		if (deltaY < (batR.getHeight() / -5)) {
 			batR.setAccUp();
+		} else if (deltaY > (batR.getHeight() / 5)) {
+			batR.setAccDown();
 		}
 	}
 	
@@ -297,13 +294,6 @@ public class Game implements KeyListener {
 					return;
 				}
 				
-				// Apply frictional and propulsive accelerations if hitting bat
-				if (gameObject instanceof Bat) {
-					object.setXVel(object.getXVel() * BAT_PROPULSION);
-					object.setYVel(object.getYVel() + 
-							BAT_FRICTION * gameObject.getYVel());
-				}
-				
 				// Detect main direction of travel
 				boolean goingLeft = false;
 				boolean goingRight = false;
@@ -311,7 +301,7 @@ public class Game implements KeyListener {
 				boolean goingDown = false;
 				
 				if (Math.abs(object.getYVel()) >= Math.abs(object.getXVel())) {
-					if (object.getYVel() >= 0) {
+					if (object.getYVel() <= 0) {
 						goingUp = true;
 					} else {
 						goingDown = true;
@@ -324,109 +314,184 @@ public class Game implements KeyListener {
 					}
 				}
 				
-				/*
-				 * Locate intersection point, update position of object, reflect
-				 * velocity as appropriate.
-				 * 
-				 * Handled using leading corner (e.g. moving up and right -> use
-				 * top right corner).
-				 * 
-				 * N.B. PIXEL constant is used so that beginning of object
-				 * trajectory in next game step is not found to already
-				 * intersect with the gameObject it collided with last step.
-				 */
-				if (goingUp) {
+				// Ball hitting bat
+				if (gameObject instanceof Bat) {
 					
-					if (object.getXVel() >= 0) {
+					// Reflect and apply frictional and propulsive acceleration
+					object.setXVel(object.getXVel() * -1 * BAT_PROPULSION);
+					object.setYVel(object.getYVel() + 
+							BAT_FRICTION * gameObject.getYVel());
+					
+					// Calculate resultant position
+					if (goingUp) {
 						
-						Vertex intercept = Physics.locateIntercept(
-								trajectories[1], targetSides[2]);
+						if (object.getXVel() <= 0) {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[0], targetSides[1]);
+							object.setPosition(
+									intercept.getX() + PX,
+									intercept.getY());
+							
+						} else {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[1], targetSides[3]);
+							object.setPosition(
+									intercept.getX() - object.getWidth() - PX,
+									intercept.getY());
+							
+						}
 						
-						object.setPosition(
-								intercept.getX() - object.getWidth(), 
-								intercept.getY() + PIXEL);
+					} else if (goingDown) {
 						
-					} else {
+						if (object.getXVel() <= 0) {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[3], targetSides[1]);
+							object.setPosition(
+									intercept.getX() + PX,
+									intercept.getY() - object.getHeight());
+							
+						} else {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[2], targetSides[3]);
+							object.setPosition(
+									intercept.getX() - object.getWidth() - PX,
+									intercept.getY() - object.getHeight());
+							
+						}
 						
-						Vertex intercept = Physics.locateIntercept(
-								trajectories[0], targetSides[2]);
+					} else if (goingRight) {
 						
-						object.setPosition(intercept.getX(), 
-								intercept.getY() + PIXEL);
+						if (object.getYVel() <= 0) {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[1], targetSides[3]);
+							object.setPosition(
+									intercept.getX() - object.getWidth() - PX,
+									intercept.getY());
+							
+						} else {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[2], targetSides[3]);
+							object.setPosition(
+									intercept.getX() - object.getWidth() - PX,
+									intercept.getY() - object.getHeight());
+							
+						}
 						
+					} else if (goingLeft) {
+						
+						if (object.getYVel() <= 0) {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[0], targetSides[1]);
+							object.setPosition(
+									intercept.getX() + PX,
+									intercept.getY());
+							
+						} else {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[3], targetSides[1]);
+							object.setPosition(
+									intercept.getX() + PX,
+									intercept.getY() - object.getHeight());
+							
+						}
 					}
+				}
+				
+				// Ball hitting boundary
+				if (gameObject instanceof Boundary) {
 					
+					// Reflect vertical velocity
 					object.setYVel(object.getYVel() * -1);
 					
-				} else if (goingDown) {
-					
-					if (object.getXVel() >= 0) {
+					// Calculate resultant position
+					if (goingUp) {
 						
-						Vertex intercept = Physics.locateIntercept(
-								trajectories[2], targetSides[0]);
+						if (object.getXVel() <= 0) {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[0], targetSides[2]);
+							object.setPosition(
+									intercept.getX(),
+									intercept.getY() + PX);
+							
+						} else {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[1], targetSides[1]);
+							object.setPosition(
+									intercept.getX() - object.getWidth(),
+									intercept.getY() + PX);
+							
+						}
 						
-						object.setPosition(
-								intercept.getX() - object.getWidth(), 
-								intercept.getY() - object.getHeight() - PIXEL);
+					} else if (goingDown) {
 						
-					} else {
+						if (object.getXVel() <= 0) {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[3], targetSides[0]);
+							object.setPosition(
+									intercept.getX(),
+									intercept.getY() - object.getHeight() - PX);
+							
+						} else {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[2], targetSides[0]);
+							object.setPosition(
+									intercept.getX() - object.getWidth(),
+									intercept.getY() - object.getHeight() - PX);
+							
+						}
 						
-						Vertex intercept = Physics.locateIntercept(
-								trajectories[3], targetSides[0]);
+					} else if (goingRight) {
 						
-						object.setPosition(intercept.getX(), 
-								intercept.getY() - object.getHeight() - PIXEL);
+						if (object.getYVel() <= 0) {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[1], targetSides[3]);
+							object.setPosition(
+									intercept.getX() - object.getWidth() - PX,
+									intercept.getY());
+							
+						} else {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[2], targetSides[3]);
+							object.setPosition(
+									intercept.getX() - object.getWidth() - PX,
+									intercept.getY() - object.getHeight());
+							
+						}
 						
+					} else if (goingLeft) {
+						
+						if (object.getYVel() <= 0) {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[0], targetSides[1]);
+							object.setPosition(
+									intercept.getX() + PX,
+									intercept.getY());
+							
+						} else {
+							
+							Vertex intercept = Physics.locateIntercept(
+									trajectories[3], targetSides[1]);
+							object.setPosition(
+									intercept.getX() + PX,
+									intercept.getY() - object.getHeight());
+							
+						}
 					}
-					
-					object.setYVel(object.getYVel() * -1);
-					
-				} else if (goingLeft) {
-					
-					if (object.getYVel() >= 0) {
-						
-						Vertex intercept = Physics.locateIntercept(
-								trajectories[3], targetSides[1]);
-						
-						object.setPosition(intercept.getX() + PIXEL, 
-								intercept.getY() - object.getHeight());
-						
-					} else {
-						
-						Vertex intercept = Physics.locateIntercept(
-								trajectories[0], targetSides[1]);
-						
-						object.setPosition(intercept.getX() + PIXEL, 
-								intercept.getY());
-						
-					}
-					
-					object.setXVel(object.getXVel() * -1);
-					
-				} else if (goingRight) {
-					
-					if (object.getYVel() >= 0) {
-						
-						Vertex intercept = Physics.locateIntercept(
-								trajectories[2], targetSides[3]);
-						
-						object.setPosition(
-								intercept.getX() - object.getWidth() - PIXEL,
-								intercept.getY() - object.getHeight());
-						
-					} else {
-						
-						Vertex intercept = Physics.locateIntercept(
-								trajectories[1], targetSides[3]);
-						
-						object.setPosition(
-								intercept.getX() - object.getWidth() - PIXEL,
-								intercept.getY());
-						
-					}
-					
-					object.setXVel(object.getXVel() * -1);
-					
 				}
 			}
 		}
@@ -453,11 +518,11 @@ public class Game implements KeyListener {
 		// Update score, set ball moving away from side which just scored
 		if (isLeft) {
 			leftScore++;
-			ball.setVel(3, 0);
 		} else {
 			rightScore++;
-			ball.setVel(-3, 0);
 		}
+		
+		ball.initializeVel();
 		
 		// Update title to reflect score
 		display.getFrame().setTitle("Ping | " + leftScore + " - " + rightScore);
