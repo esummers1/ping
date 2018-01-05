@@ -7,14 +7,11 @@ public class Display {
     private JFrame frame;
     private MyPanel panel;
     
-    public static void main(String[] args) {
-        new Display();
-    }
-    
-    public Display() {
+    public Display(Game game) {
         panel = new MyPanel(800, 600);
         frame = createFrame(panel);
         frame.setVisible(true);
+        frame.addKeyListener(game);
     }
 
     private JFrame createFrame(MyPanel panel) {

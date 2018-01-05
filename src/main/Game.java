@@ -1,6 +1,8 @@
 package main;
 
 import java.util.List;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
 
@@ -10,7 +12,7 @@ import gameObjects.Boundary;
 import gameObjects.GameObject;
 import gameObjects.Goal;
 
-public class Game {
+public class Game implements KeyListener {
 	
 	private Display display;
 	private Ball ball;
@@ -20,8 +22,6 @@ public class Game {
 	private Boundary boundB;
 	private Goal goalL;
 	private Goal goalR;
-	
-	private MyKeyListener listener;
 	
 	private char currentKey;
 	
@@ -43,9 +43,11 @@ public class Game {
 	private static final double BOUNDARY_TOP_Y = 0;
 	private static final double BOUNDARY_BOTTOM_Y = 600;
 	
-	private static final double BAT_ACCELERATION = 0.08;
-	private static final double BAT_FRICTION = 0.2;
+	private static final double BAT_FRICTION = 0.35;
 	private static final double BAT_PROPULSION = 1.1;
+	
+	private static final double BAT_BRAKING_RATIO = 0.985;
+	private static final double BAT_ACCELERATION = 0.2;
 	
 	private static final double PIXEL = 1;
 	
@@ -57,10 +59,10 @@ public class Game {
 	
 	public Game() {
 		
-		display = new Display();
+		display = new Display(this);
 		
 		ball = new Ball(BALL_INIT_X, BALL_INIT_Y);
-		ball.setVel(0, 3);
+		ball.setVel(-3, 1);
 		
 		batL = new Bat(BAT_LEFT_X, BAT_LEFT_INIT_Y);
 		batR = new Bat(BAT_RIGHT_X, BAT_RIGHT_INIT_Y);
@@ -69,8 +71,6 @@ public class Game {
 		boundB = new Boundary(BOUNDARY_BOTTOM_Y, false);
 		goalL = new Goal(GOAL_LEFT_X, true);
 		goalR = new Goal(GOAL_RIGHT_X, false);
-		
-		listener = new MyKeyListener(this);
 		
 		leftScore = 0;
 		rightScore = 0;
@@ -116,11 +116,6 @@ public class Game {
 		
 	}
 	
-	
-	public void setCurrentKey(char c) {
-		this.currentKey = c;
-	}
-	
 	/**
 	 * Sample player input for this game loop.
 	 */
@@ -128,23 +123,14 @@ public class Game {
 		
 		// Get rid of acceleration input from last loop
 		batL.resetAcc();
-		batR.resetAcc();
 		
 		// Detect key input - ?? need to test this
-		if (currentKey == 'a') {
+		if (currentKey == 'w') {
 			batL.setAccUp();
 		}
 		
-		if (currentKey == 'z') {
+		if (currentKey == 's') {
 			batL.setAccDown();
-		}
-		
-		if (currentKey == 'k') {
-			batR.setAccUp();
-		}
-		
-		if (currentKey == 'm') {
-			batR.setAccDown();
 		}
 	}
 	
@@ -153,13 +139,16 @@ public class Game {
 	 */
 	private void calculatePhysics() {
 		
+		// Calculate AI intent
+		decideAIAction();
+		
 		// Impel bats with acceleration from inputs
 		accelerateBat(batL);
 		accelerateBat(batR);
 		
 		// Project bat movements
-		project(batL);
-		project(batR);
+		Physics.project(batL);
+		Physics.project(batR);
 		
 		// Test for boundary collisions
 		List<GameObject> batTest = new ArrayList<>();
@@ -174,7 +163,7 @@ public class Game {
 		batR.updatePos();
 		
 		// Project ball movement
-		project(ball);
+		Physics.project(ball);
 		
 		// Test for collisions
 		List<GameObject> ballTest = new ArrayList<>();
@@ -196,7 +185,25 @@ public class Game {
 	}
 	
 	/**
-	 * Apply input acceleration to bat object.
+	 * Decide what the AI bat will do this step.
+	 */
+	private void decideAIAction() {
+		
+		// Get rid of acceleration from last round
+		batR.resetAcc();
+		
+		double ballCentreY = ball.getYPos() + ball.getHeight() / 2;
+		double batCentreY = batR.getYPos() + batR.getHeight() / 2;
+		
+		if (ballCentreY >= batCentreY) {
+			batR.setAccDown();
+		} else {
+			batR.setAccUp();
+		}
+	}
+	
+	/**
+	 * Apply input acceleration to Bat object.
 	 * @param bat
 	 */
 	private void accelerateBat(Bat bat) {
@@ -205,99 +212,12 @@ public class Game {
 		
 		if (bat.isAccDown()) {
 			bat.setYVel(yVel + BAT_ACCELERATION);
-		}
-		
-		if (bat.isAccUp()) {
+		} else if (bat.isAccUp()) {
 			bat.setYVel(yVel - BAT_ACCELERATION);
-		}
-	}
-	
-	/**
-	 * Return an array of vertices describing an object's current or next
-	 * location.
-	 * @param gameObject
-	 * @param current
-	 * @return
-	 */
-	private Vertex[] locate(GameObject object, boolean current) {
-		
-		double width = object.getWidth();
-		double height = object.getHeight();
-		double x;
-		double y;
-		
-		if (current) {
-			x = object.getXPos();
-			y = object.getYPos();
 		} else {
-			x = object.getXNext();
-			y = object.getYNext();
+			// Slow bat down if not accelerating
+			bat.setYVel(yVel * BAT_BRAKING_RATIO);
 		}
-		
-		Vertex[] location = new Vertex[]{
-				new Vertex(x, y),
-				new Vertex(x + width, y),
-				new Vertex(x + width, y + height),
-				new Vertex(x, y + height)
-		};
-		
-		return location;
-	}
-	
-	/**
-	 * Assign to an object's nextPosition fields its projected next position.
-	 * @param gameObject
-	 * @return
-	 */
-	private void project(GameObject object) {
-		object.setXNext(object.getXPos() + object.getXVel());
-		object.setYNext(object.getYPos() + object.getYVel());
-	}
-	
-	/**
-	 * Return the location of the intersection of two Line2D objects as a Vertex
-	 * (using y = mx + c notation within).
-	 * @param line1
-	 * @param line2
-	 * @return
-	 */
-	private Vertex locateIntercept(Line2D line1, Line2D line2) {
-		
-		// Find gradients
-		double m1 = (line1.getY2() - line1.getY1()) /
-				(line1.getX2() - line1.getX1());
-		
-		double m2 = (line2.getY2() - line2.getY1()) /
-				(line2.getX2() - line2.getX1());
-		
-		// Approximate horizontal lines
-		if (line1.getY2() - line1.getY1() == 0) {
-			m1 = 0.0001;
-		}
-		
-		if (line2.getY2() - line2.getY1() == 0) {
-			m2 = 0.0001;
-		}
-		
-		// Approximate vertical lines
-		if (line1.getX2() - line1.getX1() == 0) {
-			m1 = 10000;
-		}
-		
-		if (line2.getX2() - line2.getX1() == 0) {
-			m2 = 10000;
-		}
-		
-		// Find y-intercepts
-		double c1 = (line1.getY1() - m1 * line1.getX1());
-		double c2 = (line2.getY1() - m2 * line1.getX1());
-		
-		// Calculate intercept coordinates
-		double x = (c2 - c1) / (m1 - m2);
-		double y = m1 * x + c1;
-		
-		Vertex intercept = new Vertex(x, y);
-		return intercept;
 	}
 	
 	/**
@@ -310,15 +230,15 @@ public class Game {
 	private void handleCollisions(List<GameObject> gameObjects, 
 			GameObject object) {
 		
-		Vertex[] current = locate(object, true);
-		Vertex[] next = locate(object, false);
+		Vertex[] current = Physics.locate(object, true);
+		Vertex[] next = Physics.locate(object, false);
 		
 		boolean collides = false;
 		
 		// For all gameObjects, i.e. those against which we are testing
 		for (GameObject gameObject : gameObjects) {
 			
-			Vertex[] target = locate(gameObject, true);
+			Vertex[] target = Physics.locate(gameObject, true);
 			
 			// Map the path of the object being tested
 			Line2D[] trajectories = new Line2D[4];
@@ -377,37 +297,30 @@ public class Game {
 					return;
 				}
 				
-				// Apply frictional acceleration if gameObject is bat
+				// Apply frictional and propulsive accelerations if hitting bat
 				if (gameObject instanceof Bat) {
+					object.setXVel(object.getXVel() * BAT_PROPULSION);
 					object.setYVel(object.getYVel() + 
 							BAT_FRICTION * gameObject.getYVel());
 				}
 				
-				// Apply propulsive acceleration if gameObject is bat
-				if (gameObject instanceof Bat) {
-					object.setXVel(object.getXVel() * BAT_PROPULSION);
-				}
-				
-				// Map the shape of the object doing the colliding
-				Line2D[] colliderSides = new Line2D[4];
-				
-				// Detect direction of travel / leading edge for colliding
-				boolean travellingLeft = false;
-				boolean travellingRight = false;
-				boolean travellingUp = false;
-				boolean travellingDown = false;
+				// Detect main direction of travel
+				boolean goingLeft = false;
+				boolean goingRight = false;
+				boolean goingUp = false;
+				boolean goingDown = false;
 				
 				if (Math.abs(object.getYVel()) >= Math.abs(object.getXVel())) {
 					if (object.getYVel() >= 0) {
-						travellingUp = true;
+						goingUp = true;
 					} else {
-						travellingDown = true;
+						goingDown = true;
 					}
 				} else {
 					if (object.getXVel() >= 0) {
-						travellingRight = true;
+						goingRight = true;
 					} else {
-						travellingLeft = true;
+						goingLeft = true;
 					}
 				}
 				
@@ -422,11 +335,11 @@ public class Game {
 				 * trajectory in next game step is not found to already
 				 * intersect with the gameObject it collided with last step.
 				 */
-				if (travellingUp) {
+				if (goingUp) {
 					
 					if (object.getXVel() >= 0) {
 						
-						Vertex intercept = locateIntercept(
+						Vertex intercept = Physics.locateIntercept(
 								trajectories[1], targetSides[2]);
 						
 						object.setPosition(
@@ -435,7 +348,7 @@ public class Game {
 						
 					} else {
 						
-						Vertex intercept = locateIntercept(
+						Vertex intercept = Physics.locateIntercept(
 								trajectories[0], targetSides[2]);
 						
 						object.setPosition(intercept.getX(), 
@@ -445,11 +358,11 @@ public class Game {
 					
 					object.setYVel(object.getYVel() * -1);
 					
-				} else if (travellingDown) {
+				} else if (goingDown) {
 					
 					if (object.getXVel() >= 0) {
 						
-						Vertex intercept = locateIntercept(
+						Vertex intercept = Physics.locateIntercept(
 								trajectories[2], targetSides[0]);
 						
 						object.setPosition(
@@ -458,7 +371,7 @@ public class Game {
 						
 					} else {
 						
-						Vertex intercept = locateIntercept(
+						Vertex intercept = Physics.locateIntercept(
 								trajectories[3], targetSides[0]);
 						
 						object.setPosition(intercept.getX(), 
@@ -468,11 +381,11 @@ public class Game {
 					
 					object.setYVel(object.getYVel() * -1);
 					
-				} else if (travellingLeft) {
+				} else if (goingLeft) {
 					
 					if (object.getYVel() >= 0) {
 						
-						Vertex intercept = locateIntercept(
+						Vertex intercept = Physics.locateIntercept(
 								trajectories[3], targetSides[1]);
 						
 						object.setPosition(intercept.getX() + PIXEL, 
@@ -480,7 +393,7 @@ public class Game {
 						
 					} else {
 						
-						Vertex intercept = locateIntercept(
+						Vertex intercept = Physics.locateIntercept(
 								trajectories[0], targetSides[1]);
 						
 						object.setPosition(intercept.getX() + PIXEL, 
@@ -490,11 +403,11 @@ public class Game {
 					
 					object.setXVel(object.getXVel() * -1);
 					
-				} else if (travellingRight) {
+				} else if (goingRight) {
 					
 					if (object.getYVel() >= 0) {
 						
-						Vertex intercept = locateIntercept(
+						Vertex intercept = Physics.locateIntercept(
 								trajectories[2], targetSides[3]);
 						
 						object.setPosition(
@@ -503,7 +416,7 @@ public class Game {
 						
 					} else {
 						
-						Vertex intercept = locateIntercept(
+						Vertex intercept = Physics.locateIntercept(
 								trajectories[1], targetSides[3]);
 						
 						object.setPosition(
@@ -562,5 +475,19 @@ public class Game {
 		
 		display.getPanel().setObjects(objectsToDraw);
 		display.getPanel().repaint();
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		currentKey = e.getKeyChar();
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		currentKey = '?';
+	}
+
+	@Override
+	public void keyTyped(KeyEvent arg0) {
 	}
 }
