@@ -43,11 +43,11 @@ public class Game implements KeyListener {
 	private static final double BOUNDARY_TOP_Y = 0;
 	private static final double BOUNDARY_BOTTOM_Y = 600;
 	
-	private static final double BAT_FRICTION = 0.3;
-	private static final double BAT_PROPULSION = 1.08;
+	private static final double BAT_FRICTION = 0.2;
+	private static final double BAT_PROPULSION = 1.1;
 	
 	private static final double BAT_BRAKING_RATIO = 0.985;
-	private static final double BAT_ACCELERATION = 0.17;
+	private static final double BAT_ACCELERATION = 0.3;
 	
 	private static final double PX = 1;
 	
@@ -192,9 +192,9 @@ public class Game implements KeyListener {
 		double batCentreY = batR.getYPos() + batR.getHeight() / 2;
 		double deltaY = ballCentreY - batCentreY;
 		
-		if (deltaY < (batR.getHeight() / -5)) {
+		if (deltaY < (batR.getHeight() / -3)) {
 			batR.setAccUp();
-		} else if (deltaY > (batR.getHeight() / 5)) {
+		} else if (deltaY > (batR.getHeight() / 3)) {
 			batR.setAccDown();
 		}
 	}
@@ -218,37 +218,45 @@ public class Game implements KeyListener {
 	}
 	
 	/**
-	 * Test whether a given object collides with any of the objects in a list
-	 * of objects during its movement to its projected next position; if so,
-	 * alter its next position to simulate bouncing.
+	 * Detect and resolve collisions between a given object and a list of
+	 * other objects, considering the other objects as stationary.
 	 * @param gameObjects
 	 * @param object
 	 */
-	private void handleCollisions(List<GameObject> gameObjects, 
-			GameObject object) {
+	private void handleCollisions(List<GameObject> gameObjects, GameObject object) {
 		
-		Vertex[] current = Physics.locate(object, true);
-		Vertex[] next = Physics.locate(object, false);
+		boolean collidesX = false;
+		boolean collidesY = false;
 		
-		boolean collides = false;
+		double xVel = object.getXVel();
+		double yVel = object.getYVel();
 		
-		// For all gameObjects, i.e. those against which we are testing
+		Vertex[] current = Physics.locate(object);
+		Vertex[] afterX = new Vertex[4];
+		Vertex[] afterY = new Vertex[4];
+		
+		// Find new positions after stepping separately
+		for (int i = 0; i < 4; i++) {
+			afterX[i] = new Vertex(current[i].getX() + xVel, current[i].getY());
+			afterY[i] = new Vertex(current[i].getX(), current[i].getY() + yVel);
+		}
+		
 		for (GameObject gameObject : gameObjects) {
 			
-			Vertex[] target = Physics.locate(gameObject, true);
+			Vertex[] target = Physics.locate(gameObject);
+			Line2D[] trajectoriesX = new Line2D[4];
+			Line2D[] trajectoriesY = new Line2D[4];
 			
-			// Map the path of the object being tested
-			Line2D[] trajectories = new Line2D[4];
-			
+			// Map path of object
 			for (int i = 0; i < 4; i++) {
-				trajectories[i] = new Line2D.Double(
-						current[i].getX(),
-						current[i].getY(),
-						next[i].getX(),
-						next[i].getY());
+				trajectoriesX[i] = new Line2D.Double(current[i].getX(),
+						current[i].getY(), afterX[i].getX(), afterX[i].getY());
+				
+				trajectoriesY[i] = new Line2D.Double(current[i].getX(), 
+						current[i].getY(), afterY[i].getX(), afterY[i].getY());
 			}
 			
-			// Map the shape of the gameObject being tested against
+			// Map the shape of the GameObject being tested against
 			Line2D[] targetSides = new Line2D[4];
 			int[] corners = new int[]{1, 2, 3, 0};
 			
@@ -260,29 +268,12 @@ public class Game implements KeyListener {
 						target[j].getX(), target[j].getY());
 			}
 			
-			// Test intersection
-			here:
+			// Test for X intersection
+			collidesX = Physics.detectCollision(trajectoriesX, targetSides);
 			
-			for (Line2D trajectory : trajectories) {
-				for (Line2D side : targetSides) {
-					
-					// Skip zero-length lines
-					if (side.getX1() == side.getX2() &&
-							side.getY1() == side.getY2()) {
-						continue;
-					}
-					
-					collides = side.intersectsLine(trajectory);
-					
-					if (collides) {
-						break here;
-					}
-				}
-			}
-			
-			if (collides) {
+			if (collidesX) {
 				
-				// Ball hitting goal
+				// If hitting goal, record score and skip
 				if (gameObject instanceof Goal) {
 					
 					if (((Goal) gameObject).isLeft()) {
@@ -294,208 +285,44 @@ public class Game implements KeyListener {
 					return;
 				}
 				
-				// Detect main direction of travel
-				boolean goingLeft = false;
-				boolean goingRight = false;
-				boolean goingUp = false;
-				boolean goingDown = false;
-				
-				if (Math.abs(object.getYVel()) >= Math.abs(object.getXVel())) {
-					if (object.getYVel() <= 0) {
-						goingUp = true;
-					} else {
-						goingDown = true;
-					}
+				// Handle collision
+				if (xVel >= 0) {
+					object.setXNext(gameObject.getXPos() - 
+							PX - object.getWidth());
 				} else {
-					if (object.getXVel() >= 0) {
-						goingRight = true;
-					} else {
-						goingLeft = true;
-					}
+					object.setXNext(gameObject.getXPos() + 
+							gameObject.getWidth() + PX);
 				}
 				
-				// Ball hitting bat
+				object.setXVel(xVel * -1);
+				
+				// Apply acceleration to ball if bat
 				if (gameObject instanceof Bat) {
-					
-					// Reflect and apply frictional and propulsive acceleration
-					object.setXVel(object.getXVel() * -1 * BAT_PROPULSION);
-					object.setYVel(object.getYVel() + 
-							BAT_FRICTION * gameObject.getYVel());
-					
-					// Calculate resultant position
-					if (goingUp) {
-						
-						if (object.getXVel() <= 0) {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[0], targetSides[1]);
-							object.setPosition(
-									intercept.getX() + PX,
-									intercept.getY());
-							
-						} else {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[1], targetSides[3]);
-							object.setPosition(
-									intercept.getX() - object.getWidth() - PX,
-									intercept.getY());
-							
-						}
-						
-					} else if (goingDown) {
-						
-						if (object.getXVel() <= 0) {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[3], targetSides[1]);
-							object.setPosition(
-									intercept.getX() + PX,
-									intercept.getY() - object.getHeight());
-							
-						} else {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[2], targetSides[3]);
-							object.setPosition(
-									intercept.getX() - object.getWidth() - PX,
-									intercept.getY() - object.getHeight());
-							
-						}
-						
-					} else if (goingRight) {
-						
-						if (object.getYVel() <= 0) {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[1], targetSides[3]);
-							object.setPosition(
-									intercept.getX() - object.getWidth() - PX,
-									intercept.getY());
-							
-						} else {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[2], targetSides[3]);
-							object.setPosition(
-									intercept.getX() - object.getWidth() - PX,
-									intercept.getY() - object.getHeight());
-							
-						}
-						
-					} else if (goingLeft) {
-						
-						if (object.getYVel() <= 0) {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[0], targetSides[1]);
-							object.setPosition(
-									intercept.getX() + PX,
-									intercept.getY());
-							
-						} else {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[3], targetSides[1]);
-							object.setPosition(
-									intercept.getX() + PX,
-									intercept.getY() - object.getHeight());
-							
-						}
-					}
+					object.setXVel(object.getXVel() * BAT_PROPULSION);
+					object.setYVel(yVel + gameObject.getYVel() * BAT_FRICTION);
 				}
 				
-				// Ball hitting boundary
-				if (gameObject instanceof Boundary) {
-					
-					// Reflect vertical velocity
-					object.setYVel(object.getYVel() * -1);
-					
-					// Calculate resultant position
-					if (goingUp) {
-						
-						if (object.getXVel() <= 0) {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[0], targetSides[2]);
-							object.setPosition(
-									intercept.getX(),
-									intercept.getY() + PX);
-							
-						} else {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[1], targetSides[1]);
-							object.setPosition(
-									intercept.getX() - object.getWidth(),
-									intercept.getY() + PX);
-							
-						}
-						
-					} else if (goingDown) {
-						
-						if (object.getXVel() <= 0) {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[3], targetSides[0]);
-							object.setPosition(
-									intercept.getX(),
-									intercept.getY() - object.getHeight() - PX);
-							
-						} else {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[2], targetSides[0]);
-							object.setPosition(
-									intercept.getX() - object.getWidth(),
-									intercept.getY() - object.getHeight() - PX);
-							
-						}
-						
-					} else if (goingRight) {
-						
-						if (object.getYVel() <= 0) {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[1], targetSides[3]);
-							object.setPosition(
-									intercept.getX() - object.getWidth() - PX,
-									intercept.getY());
-							
-						} else {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[2], targetSides[3]);
-							object.setPosition(
-									intercept.getX() - object.getWidth() - PX,
-									intercept.getY() - object.getHeight());
-							
-						}
-						
-					} else if (goingLeft) {
-						
-						if (object.getYVel() <= 0) {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[0], targetSides[1]);
-							object.setPosition(
-									intercept.getX() + PX,
-									intercept.getY());
-							
-						} else {
-							
-							Vertex intercept = Physics.locateIntercept(
-									trajectories[3], targetSides[1]);
-							object.setPosition(
-									intercept.getX() + PX,
-									intercept.getY() - object.getHeight());
-							
-						}
-					}
+				// Skip to next GameObject, i.e. forget Y
+				continue;
+			}
+			
+			// Test for Y intersection
+			collidesY = Physics.detectCollision(trajectoriesY, targetSides);
+			
+			if (collidesY) {
+				
+				if (yVel >= 0) {
+					object.setYNext(gameObject.getYPos() - PX - object.getHeight());
+				} else {
+					object.setYNext(gameObject.getYPos() + PX);
 				}
+				
+				object.setYVel(yVel * -1);
 			}
 		}
 	}
+	
+
 	
 	/**
 	 * Update the game score and reset the game objects for the next round.

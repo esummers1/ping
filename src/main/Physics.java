@@ -17,72 +17,20 @@ public abstract class Physics {
 	}
 	
 	/**
-	 * Return the location of the intersection of two Line2D objects as a Vertex
-	 * (using y = mx + c notation within).
-	 * @param line1
-	 * @param line2
-	 * @return
-	 */
-	public static Vertex locateIntercept(Line2D line1, Line2D line2) {
-		
-		// Find gradients
-		double m1 = (line1.getY2() - line1.getY1()) /
-				(line1.getX2() - line1.getX1());
-		
-		double m2 = (line2.getY2() - line2.getY1()) /
-				(line2.getX2() - line2.getX1());
-		
-		// Approximate horizontal lines
-		if (line1.getY2() - line1.getY1() == 0) {
-			m1 = 0.0001;
-		}
-		
-		if (line2.getY2() - line2.getY1() == 0) {
-			m2 = 0.0001;
-		}
-		
-		// Approximate vertical lines
-		if (line1.getX2() - line1.getX1() == 0) {
-			m1 = 10000;
-		}
-		
-		if (line2.getX2() - line2.getX1() == 0) {
-			m2 = 10000;
-		}
-		
-		// Find y-intercepts
-		double c1 = (line1.getY1() - m1 * line1.getX1());
-		double c2 = (line2.getY1() - m2 * line1.getX1());
-		
-		// Calculate intercept coordinates
-		double x = (c2 - c1) / (m1 - m2);
-		double y = m1 * x + c1;
-		
-		Vertex intercept = new Vertex(x, y);
-		return intercept;
-	}
-	
-	/**
-	 * Return an array of vertices describing an object's current or next
-	 * location.
+	 * Return an array of vertices describing an object's current location.
 	 * @param gameObject
 	 * @param current
 	 * @return
 	 */
-	public static Vertex[] locate(GameObject object, boolean current) {
+	public static Vertex[] locate(GameObject object) {
 		
 		double width = object.getWidth();
 		double height = object.getHeight();
 		double x;
 		double y;
 		
-		if (current) {
-			x = object.getXPos();
-			y = object.getYPos();
-		} else {
-			x = object.getXNext();
-			y = object.getYNext();
-		}
+		x = object.getXPos();
+		y = object.getYPos();
 		
 		Vertex[] location = new Vertex[]{
 				new Vertex(x, y),
@@ -92,6 +40,35 @@ public abstract class Physics {
 		};
 		
 		return location;
+	}
+	
+	/**
+	 * Test whether any of a given set of object vertex trajectories intersects
+	 * any of a set of edges of another object.
+	 * @param trajectories
+	 * @param sides
+	 * @return
+	 */
+	public static boolean detectCollision(Line2D[] trajectories, 
+			Line2D[] sides) {
+		
+		for (Line2D trajectory : trajectories) {
+			
+			for (Line2D side : sides) {
+				
+				// Skip zero-length sides
+				if (side.getX1() == side.getX2() && 
+						side.getY1() == side.getY2()) {
+					continue;
+				}
+				
+				if (side.intersectsLine(trajectory)) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
 	}
 	
 }

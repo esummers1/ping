@@ -1,9 +1,2 @@
 Features:
- - Smooth AI behaviour
- - Multiple balls
-
-Known Issues:
- - Collisions fail if leading corner misses predicted edge e.g. ball hits end of
-   bat
-  -> Change collision model to be generic, e.g. based on direct interaction of
-     sides of objects?
+ - Multiple balls?
