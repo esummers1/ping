@@ -25,9 +25,6 @@ public class Game implements KeyListener {
 	
 	private char currentKey;
 	
-	private boolean leftScored;
-	private boolean rightScored;
-	
 	private static final double BALL_INIT_X = 395;
 	private static final double BALL_INIT_Y = 295;
 	
@@ -69,8 +66,8 @@ public class Game implements KeyListener {
 		
 		boundT = new Boundary(BOUNDARY_TOP_Y, true);
 		boundB = new Boundary(BOUNDARY_BOTTOM_Y, false);
-		goalL = new Goal(GOAL_LEFT_X, true);
-		goalR = new Goal(GOAL_RIGHT_X, false);
+		goalL = new Goal(GOAL_LEFT_X);
+		goalR = new Goal(GOAL_RIGHT_X);
 		
 		leftScore = 0;
 		rightScore = 0;
@@ -84,21 +81,11 @@ public class Game implements KeyListener {
 		while (true) {
 			
 			long startTime = System.currentTimeMillis();
-			leftScored = false;
-			rightScored = false;
 			
 			sampleInput();
 			
 			// Calculate motion of objects and return scoring if necessary
 			calculatePhysics();
-			
-			if (leftScored) {
-				updateScore(true);
-			}
-			
-			if (rightScored) {
-				updateScore(false);
-			}
 			
 			render();
 			
@@ -275,13 +262,7 @@ public class Game implements KeyListener {
 				
 				// If hitting goal, record score and skip
 				if (gameObject instanceof Goal) {
-					
-					if (((Goal) gameObject).isLeft()) {
-						leftScored = true;
-					} else {
-						rightScored = true;
-					}
-					
+				    updateScore(gameObject == goalL);
 					return;
 				}
 				
