@@ -12,9 +12,8 @@ import gameObjects.GameObject;
 
 public class MyPanel extends JPanel {
 	
-    // not sure what this is for
-	private static final long serialVersionUID = 1L;
-	private Graphics g;
+    private static final long serialVersionUID = 1L;
+
     private List<GameObject> objects;
 
 	public MyPanel(int width, int height) {

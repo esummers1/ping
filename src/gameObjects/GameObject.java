@@ -3,8 +3,6 @@ package gameObjects;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-import main.Vertex;
-
 public class GameObject {
 	
 	private double width;

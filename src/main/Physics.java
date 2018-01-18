@@ -8,8 +8,7 @@ public abstract class Physics {
 	
 	/**
 	 * Assign to an object's nextPosition fields its projected next position.
-	 * @param gameObject
-	 * @return
+	 * @param object
 	 */
 	public static void project(GameObject object) {
 		object.setXNext(object.getXPos() + object.getXVel());
@@ -18,8 +17,7 @@ public abstract class Physics {
 	
 	/**
 	 * Return an array of vertices describing an object's current location.
-	 * @param gameObject
-	 * @param current
+	 * @param object
 	 * @return
 	 */
 	public static Vertex[] locate(GameObject object) {
