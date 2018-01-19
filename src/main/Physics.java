@@ -2,7 +2,7 @@ package main;
 
 import java.awt.geom.Line2D;
 
-import gameObjects.Entity;
+import entities.Entity;
 
 public abstract class Physics {
 	

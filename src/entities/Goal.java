@@ -1,4 +1,4 @@
-package gameObjects;
+package entities;
 
 public class Goal extends Entity {
 	
@@ -7,10 +7,5 @@ public class Goal extends Entity {
 	
 	public Goal(double xPos) {
 		super(WIDTH, HEIGHT, xPos, 0, 0, 0);
-	}
-	
-	@Override
-	public boolean canCollideWith(Entity entity) {
-		return false;
 	}
 }

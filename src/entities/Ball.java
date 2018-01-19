@@ -1,4 +1,4 @@
-package gameObjects;
+package entities;
 
 public class Ball extends Entity {
 	
@@ -28,10 +28,5 @@ public class Ball extends Entity {
 		}
 		
 		setVel(xVel, yVel);
-	}
-	
-	@Override
-	public boolean canCollideWith(Entity entity) {
-		return (entity instanceof Ball) ? false : true;
 	}
 }

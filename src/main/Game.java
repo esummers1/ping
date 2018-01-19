@@ -1,16 +1,17 @@
 package main;
 
 import java.util.List;
+
+import entities.Ball;
+import entities.Bat;
+import entities.Boundary;
+import entities.Entity;
+import entities.Goal;
+
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
-
-import gameObjects.Ball;
-import gameObjects.Bat;
-import gameObjects.Boundary;
-import gameObjects.Entity;
-import gameObjects.Goal;
 
 public class Game implements KeyListener {
 	
@@ -22,8 +23,6 @@ public class Game implements KeyListener {
 	private Boundary boundB;
 	private Goal goalL;
 	private Goal goalR;
-	
-	private List<Entity> entities;
 	
 	private char currentKey;
 	
@@ -70,15 +69,6 @@ public class Game implements KeyListener {
 		boundB = new Boundary(BOUNDARY_BOTTOM_Y, false);
 		goalL = new Goal(GOAL_LEFT_X);
 		goalR = new Goal(GOAL_RIGHT_X);
-		
-		entities = new ArrayList<>();
-		entities.add(batL);
-		entities.add(batR);
-		entities.add(boundT);
-		entities.add(boundB);
-		entities.add(goalL);
-		entities.add(goalR);
-		entities.add(ball);
 		
 		leftScore = 0;
 		rightScore = 0;
@@ -370,4 +360,5 @@ public class Game implements KeyListener {
 	@Override
 	public void keyTyped(KeyEvent arg0) {
 	}
+	
 }

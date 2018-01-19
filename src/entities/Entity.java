@@ -1,4 +1,4 @@
-package gameObjects;
+package entities;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -93,10 +93,6 @@ public class Entity {
 	public void setPosition(double xNext, double yNext) {
 		this.xNext = xNext;
 		this.yNext = yNext;
-	}
-	
-	public boolean canCollideWith(Entity object) {
-		return true;
 	}
 	
 	public void draw(Graphics2D g) {

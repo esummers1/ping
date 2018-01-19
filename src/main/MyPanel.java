@@ -8,7 +8,7 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
-import gameObjects.Entity;
+import entities.Entity;
 
 public class MyPanel extends JPanel {
 	

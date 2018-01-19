@@ -1,4 +1,4 @@
-package gameObjects;
+package entities;
 
 public class Boundary extends Entity {
 	
@@ -14,10 +14,5 @@ public class Boundary extends Entity {
 	
 	public boolean isTop() {
 		return isTop;
-	}
-	
-	@Override
-	public boolean canCollideWith(Entity entity) {
-		return false;
 	}
 }

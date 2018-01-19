@@ -1,4 +1,4 @@
-package gameObjects;
+package entities;
 
 public class Bat extends Entity {
 	
@@ -31,10 +31,5 @@ public class Bat extends Entity {
 	public void resetAcc() {
 		this.accDown = false;
 		this.accUp = false;
-	}
-	
-	@Override
-	public boolean canCollideWith(Entity entity) {
-		return (entity instanceof Boundary) ? true : false;
 	}
 }
