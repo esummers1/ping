@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import gameObjects.Ball;
 import gameObjects.Bat;
 import gameObjects.Boundary;
-import gameObjects.GameObject;
+import gameObjects.Entity;
 import gameObjects.Goal;
 
 public class Game implements KeyListener {
@@ -22,6 +22,8 @@ public class Game implements KeyListener {
 	private Boundary boundB;
 	private Goal goalL;
 	private Goal goalR;
+	
+	private List<Entity> entities;
 	
 	private char currentKey;
 	
@@ -43,8 +45,8 @@ public class Game implements KeyListener {
 	private static final double BAT_FRICTION = 0.2;
 	private static final double BAT_PROPULSION = 1.1;
 	
-	private static final double BAT_BRAKING_RATIO = 0.985;
-	private static final double BAT_ACCELERATION = 0.3;
+	private static final double BAT_BRAKING_RATIO = 0.95;
+	private static final double BAT_ACCELERATION = 0.6;
 	
 	private static final double PX = 1;
 	
@@ -69,6 +71,15 @@ public class Game implements KeyListener {
 		goalL = new Goal(GOAL_LEFT_X);
 		goalR = new Goal(GOAL_RIGHT_X);
 		
+		entities = new ArrayList<>();
+		entities.add(batL);
+		entities.add(batR);
+		entities.add(boundT);
+		entities.add(boundB);
+		entities.add(goalL);
+		entities.add(goalR);
+		entities.add(ball);
+		
 		leftScore = 0;
 		rightScore = 0;
 	}
@@ -83,10 +94,7 @@ public class Game implements KeyListener {
 			long startTime = System.currentTimeMillis();
 			
 			sampleInput();
-			
-			// Calculate motion of objects and return scoring if necessary
 			calculatePhysics();
-			
 			render();
 			
 			// Regulate time step
@@ -111,7 +119,7 @@ public class Game implements KeyListener {
 		// Get rid of acceleration input from last loop
 		batL.resetAcc();
 		
-		// Detect key input - ?? need to test this
+		// Detect key input
 		if (currentKey == 'w') {
 			batL.setAccUp();
 		}
@@ -126,7 +134,7 @@ public class Game implements KeyListener {
 	 */
 	private void calculatePhysics() {
 		
-		// Calculate AI intent
+		// Compute AI intent
 		decideAIAction();
 		
 		// Impel bats with acceleration from inputs
@@ -138,7 +146,7 @@ public class Game implements KeyListener {
 		Physics.project(batR);
 		
 		// Test for collisions
-		List<GameObject> batTest = new ArrayList<>();
+		List<Entity> batTest = new ArrayList<>();
 		batTest.add(boundT);
 		batTest.add(boundB);
 		
@@ -153,7 +161,7 @@ public class Game implements KeyListener {
 		Physics.project(ball);
 		
 		// Test for collisions
-		List<GameObject> ballTest = new ArrayList<>();
+		List<Entity> ballTest = new ArrayList<>();
 		ballTest.add(boundB);
 		ballTest.add(boundT);
 		ballTest.add(batL);
@@ -207,10 +215,11 @@ public class Game implements KeyListener {
 	/**
 	 * Detect and resolve collisions between a given object and a list of
 	 * other objects, considering the other objects as stationary.
-	 * @param gameObjects
+	 * @param entities
 	 * @param object
 	 */
-	private void handleCollisions(List<GameObject> gameObjects, GameObject object) {
+	private void handleCollisions(List<Entity> entities, 
+			Entity object) {
 		
 		boolean collidesX = false;
 		boolean collidesY = false;
@@ -228,9 +237,9 @@ public class Game implements KeyListener {
 			afterY[i] = new Vertex(current[i].getX(), current[i].getY() + yVel);
 		}
 		
-		for (GameObject gameObject : gameObjects) {
+		for (Entity entity : entities) {
 			
-			Vertex[] target = Physics.locate(gameObject);
+			Vertex[] target = Physics.locate(entity);
 			Line2D[] trajectoriesX = new Line2D[4];
 			Line2D[] trajectoriesY = new Line2D[4];
 			
@@ -261,26 +270,26 @@ public class Game implements KeyListener {
 			if (collidesX) {
 				
 				// If hitting goal, record score and skip
-				if (gameObject instanceof Goal) {
-				    updateScore(gameObject == goalL);
+				if (entity instanceof Goal) {
+				    updateScore(entity == goalL);
 					return;
 				}
 				
 				// Handle collision
 				if (xVel >= 0) {
-					object.setXNext(gameObject.getXPos() - 
+					object.setXNext(entity.getXPos() - 
 							PX - object.getWidth());
 				} else {
-					object.setXNext(gameObject.getXPos() + 
-							gameObject.getWidth() + PX);
+					object.setXNext(entity.getXPos() + 
+							entity.getWidth() + PX);
 				}
 				
 				object.setXVel(xVel * -1);
 				
 				// Apply acceleration to ball if bat
-				if (gameObject instanceof Bat) {
+				if (entity instanceof Bat) {
 					object.setXVel(object.getXVel() * BAT_PROPULSION);
-					object.setYVel(yVel + gameObject.getYVel() * BAT_FRICTION);
+					object.setYVel(yVel + entity.getYVel() * BAT_FRICTION);
 				}
 				
 				// Skip to next GameObject, i.e. forget Y
@@ -293,17 +302,15 @@ public class Game implements KeyListener {
 			if (collidesY) {
 				
 				if (yVel >= 0) {
-					object.setYNext(gameObject.getYPos() - PX - object.getHeight());
+					object.setYNext(entity.getYPos() - PX - object.getHeight());
 				} else {
-					object.setYNext(gameObject.getYPos() + PX);
+					object.setYNext(entity.getYPos() + PX);
 				}
 				
 				object.setYVel(yVel * -1);
 			}
 		}
 	}
-	
-
 	
 	/**
 	 * Update the game score and reset the game objects for the next round.
@@ -323,11 +330,11 @@ public class Game implements KeyListener {
 		batR.setPosition(BAT_RIGHT_X, BAT_RIGHT_INIT_Y);
 		batR.updatePos();
 		
-		// Update score, set ball moving away from side which just scored
+		// Update score
 		if (isLeft) {
-			leftScore++;
-		} else {
 			rightScore++;
+		} else {
+			leftScore++;
 		}
 		
 		ball.initializeVel();
@@ -340,13 +347,13 @@ public class Game implements KeyListener {
 	 * Update display to show new positions of game objects.
 	 */
 	private void render() {
-		List<GameObject> objectsToDraw = new ArrayList<>();
+		List<Entity> entitiesToDraw = new ArrayList<>();
 		
-		objectsToDraw.add(batL);
-		objectsToDraw.add(batR);
-		objectsToDraw.add(ball);
+		entitiesToDraw.add(batL);
+		entitiesToDraw.add(batR);
+		entitiesToDraw.add(ball);
 		
-		display.getPanel().setObjects(objectsToDraw);
+		display.getPanel().setObjects(entitiesToDraw);
 		display.getPanel().repaint();
 	}
 

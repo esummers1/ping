@@ -1,6 +1,6 @@
 package gameObjects;
 
-public class Boundary extends GameObject {
+public class Boundary extends Entity {
 	
 	private static final int WIDTH = 800;
 	private static final int HEIGHT = 0;
@@ -16,4 +16,8 @@ public class Boundary extends GameObject {
 		return isTop;
 	}
 	
+	@Override
+	public boolean canCollideWith(Entity entity) {
+		return false;
+	}
 }

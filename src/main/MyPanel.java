@@ -8,13 +8,13 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
-import gameObjects.GameObject;
+import gameObjects.Entity;
 
 public class MyPanel extends JPanel {
 	
     private static final long serialVersionUID = 1L;
 
-    private List<GameObject> objects;
+    private List<Entity> entities;
 
 	public MyPanel(int width, int height) {
         setPreferredSize(new Dimension(width, height));
@@ -27,16 +27,16 @@ public class MyPanel extends JPanel {
     	super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         
-        for (GameObject object : objects) {
-        	object.draw(g2d);
+        for (Entity entity : entities) {
+        	entity.draw(g2d);
         }
     }
     
     /**
      * Accept a list of GameObjects to draw.
-     * @param objects
+     * @param entities
      */
-    public void setObjects(List<GameObject> objects) {
-    	this.objects = objects;
+    public void setObjects(List<Entity> entities) {
+    	this.entities = entities;
     }
 }

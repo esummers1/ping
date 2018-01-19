@@ -1,2 +1,5 @@
+Issues:
+ - Strange behaviour where ball jumps to top of bat if it collides with bottom
+
 Features:
  - Multiple balls?

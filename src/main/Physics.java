@@ -2,7 +2,7 @@ package main;
 
 import java.awt.geom.Line2D;
 
-import gameObjects.GameObject;
+import gameObjects.Entity;
 
 public abstract class Physics {
 	
@@ -10,7 +10,7 @@ public abstract class Physics {
 	 * Assign to an object's nextPosition fields its projected next position.
 	 * @param object
 	 */
-	public static void project(GameObject object) {
+	public static void project(Entity object) {
 		object.setXNext(object.getXPos() + object.getXVel());
 		object.setYNext(object.getYPos() + object.getYVel());
 	}
@@ -20,7 +20,7 @@ public abstract class Physics {
 	 * @param object
 	 * @return
 	 */
-	public static Vertex[] locate(GameObject object) {
+	public static Vertex[] locate(Entity object) {
 		
 		double width = object.getWidth();
 		double height = object.getHeight();

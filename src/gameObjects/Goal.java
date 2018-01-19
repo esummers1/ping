@@ -1,6 +1,6 @@
 package gameObjects;
 
-public class Goal extends GameObject {
+public class Goal extends Entity {
 	
 	private static final int WIDTH = 0;
 	private static final int HEIGHT = 600;
@@ -9,4 +9,8 @@ public class Goal extends GameObject {
 		super(WIDTH, HEIGHT, xPos, 0, 0, 0);
 	}
 	
+	@Override
+	public boolean canCollideWith(Entity entity) {
+		return false;
+	}
 }

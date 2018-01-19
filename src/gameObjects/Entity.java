@@ -3,7 +3,7 @@ package gameObjects;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-public class GameObject {
+public class Entity {
 	
 	private double width;
 	private double height;
@@ -17,7 +17,7 @@ public class GameObject {
 	private double xVel;
 	private double yVel;
 	
-	public GameObject(double width,
+	public Entity(double width,
 			double height,
 			double xPos,
 			double yPos,
@@ -93,6 +93,10 @@ public class GameObject {
 	public void setPosition(double xNext, double yNext) {
 		this.xNext = xNext;
 		this.yNext = yNext;
+	}
+	
+	public boolean canCollideWith(Entity object) {
+		return true;
 	}
 	
 	public void draw(Graphics2D g) {

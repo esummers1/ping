@@ -1,6 +1,6 @@
 package gameObjects;
 
-public class Ball extends GameObject {
+public class Ball extends Entity {
 	
 	private static final int WIDTH = 10;
 	private static final int HEIGHT = 10;
@@ -28,5 +28,10 @@ public class Ball extends GameObject {
 		}
 		
 		setVel(xVel, yVel);
+	}
+	
+	@Override
+	public boolean canCollideWith(Entity entity) {
+		return (entity instanceof Ball) ? false : true;
 	}
 }

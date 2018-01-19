@@ -1,6 +1,6 @@
 package gameObjects;
 
-public class Bat extends GameObject {
+public class Bat extends Entity {
 	
 	private static final int WIDTH = 10;
 	private static final int HEIGHT = 60;
@@ -31,5 +31,10 @@ public class Bat extends GameObject {
 	public void resetAcc() {
 		this.accDown = false;
 		this.accUp = false;
+	}
+	
+	@Override
+	public boolean canCollideWith(Entity entity) {
+		return (entity instanceof Boundary) ? true : false;
 	}
 }
